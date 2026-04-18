@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { initDB } from "../src/db/index";
 import { useUserStore } from "../src/store/useUserStore";
 import { useGoalStore } from "../src/store/useGoalStore";
+import { useWorkoutStore } from "../src/store/useWorkoutStore";
 
 export default function RootLayout() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function RootLayout() {
     (state) => state.onboardingCompleted
   );
   const goalsHydrated = useGoalStore((state) => state.isHydrated);
+  const workoutsHydrated = useWorkoutStore((state) => state.isHydrated);
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -28,6 +30,9 @@ export default function RootLayout() {
 
         // Step 3: Hydrate goals store from database
         await useGoalStore.getState().hydrate();
+
+        // Step 4: Hydrate workout store from database
+        await useWorkoutStore.getState().hydrate();
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error";
@@ -63,7 +68,7 @@ export default function RootLayout() {
     );
   }
 
-  const isReady = dbReady && isHydrated && goalsHydrated;
+  const isReady = dbReady && isHydrated && goalsHydrated && workoutsHydrated;
 
   return (
     <View className="flex-1 bg-dark">

@@ -110,6 +110,7 @@ async function performInitialization(): Promise<SQLite.SQLiteDatabase> {
         FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
       );
     `);
+    await ensureWorkoutSchema(db);
 
     // Create exercises table
     await db.execAsync(`
@@ -181,6 +182,31 @@ async function ensureUserSchema(database: SQLite.SQLiteDatabase): Promise<void> 
       "ALTER TABLE users ADD COLUMN preferences_json TEXT;"
     );
   }
+}
+
+async function ensureWorkoutSchema(database: SQLite.SQLiteDatabase): Promise<void> {
+  // Keep only the latest active workout (duration IS NULL) per user before adding invariant index.
+  await database.execAsync(`
+    UPDATE workouts
+    SET duration = 0
+    WHERE id IN (
+      SELECT w.id
+      FROM workouts w
+      JOIN (
+        SELECT user_id, MAX(id) AS keep_id
+        FROM workouts
+        WHERE duration IS NULL
+        GROUP BY user_id
+      ) keep_workout ON keep_workout.user_id = w.user_id
+      WHERE w.duration IS NULL AND w.id != keep_workout.keep_id
+    );
+  `);
+
+  await database.execAsync(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_workouts_single_active_per_user
+    ON workouts(user_id)
+    WHERE duration IS NULL;
+  `);
 }
 
 /**
