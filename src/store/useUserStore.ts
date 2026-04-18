@@ -6,6 +6,7 @@ import type { User } from "../db/index";
 export interface UserStore {
   // State
   id: number | null;
+  name: string;
   groqApiKey: string | null;
   onboardingCompleted: boolean;
   isHydrated: boolean;
@@ -27,6 +28,7 @@ const GROQ_API_KEY_STORAGE_KEY = "groq_api_key";
 export const useUserStore = create<UserStore>((set, get) => ({
   // Initial state
   id: null,
+  name: "",
   groqApiKey: null,
   onboardingCompleted: false,
   isHydrated: false,
@@ -77,7 +79,7 @@ export const useUserStore = create<UserStore>((set, get) => ({
         "UPDATE users SET onboarding_completed = 1, preferences_json = ? WHERE id = ?",
         [JSON.stringify({ name, primaryGoal }), id]
       );
-      set({ onboardingCompleted: true });
+      set({ onboardingCompleted: true, name });
     } catch (error) {
       console.error("✗ Failed to complete onboarding:", error);
       throw error;
@@ -130,6 +132,8 @@ async function performHydration(
       );
     }
 
+    const preferences = parseUserPreferences(user.preferences_json);
+
     // One-time migration from legacy plaintext SQLite storage.
     const legacyDbKey = user.groq_api_key?.trim() ?? "";
     if (!groqApiKey && legacyDbKey) {
@@ -142,6 +146,7 @@ async function performHydration(
 
     set({
       id: user.id,
+      name: preferences.name,
       groqApiKey,
       onboardingCompleted: Boolean(user.onboarding_completed),
       isHydrated: true,
@@ -153,6 +158,24 @@ async function performHydration(
     set({ isLoading: false });
     console.error("✗ Failed to hydrate user store:", error);
     throw error;
+  }
+}
+
+type UserPreferences = {
+  name: string;
+};
+
+function parseUserPreferences(rawPreferences: string | null): UserPreferences {
+  if (!rawPreferences) {
+    return { name: "" };
+  }
+
+  try {
+    const parsed = JSON.parse(rawPreferences) as Record<string, unknown>;
+    const name = typeof parsed.name === "string" ? parsed.name.trim() : "";
+    return { name };
+  } catch {
+    return { name: "" };
   }
 }
 
