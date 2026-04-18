@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { getDB } from "../db/index";
 import { useUserStore } from "./useUserStore";
+import * as aiService from "../services/ai";
 
 type ActiveSet = {
   id: number;
@@ -24,6 +25,7 @@ type ActiveExercise = {
 type ActiveWorkout = {
   id: number;
   user_id: number;
+  workout_day_id: number | null;
   date: string;
   plan_name: string;
   duration: number | null;
@@ -47,6 +49,7 @@ interface WorkoutStore {
   activeWorkout: ActiveWorkout | null;
   isHydrated: boolean;
   startWorkout: () => Promise<void>;
+  initializeSchedule: (options?: { force?: boolean }) => Promise<void>;
   addExercise: (exerciseData: AddExerciseData) => Promise<void>;
   updateSet: (
     exerciseId: number,
@@ -69,7 +72,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     }
 
     const existingWorkout = await db.getFirstAsync<{ id: number; date: string; plan_name: string; duration: number | null }>(
-      "SELECT id, date, plan_name, duration FROM workouts WHERE user_id = ? AND duration IS NULL ORDER BY id DESC LIMIT 1",
+      "SELECT id, workout_day_id, date, plan_name, duration FROM workouts WHERE user_id = ? AND duration IS NULL ORDER BY id DESC LIMIT 1",
       [userId]
     );
 
@@ -82,7 +85,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     let result: { lastInsertRowId: number };
     try {
       result = await db.runAsync(
-        "INSERT INTO workouts (user_id, date, plan_name, duration) VALUES (?, ?, ?, NULL)",
+        "INSERT INTO workouts (user_id, workout_day_id, date, plan_name, duration) VALUES (?, NULL, ?, ?, NULL)",
         [userId, startedAt, "Active Workout"]
       );
     } catch (error) {
@@ -103,12 +106,40 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       activeWorkout: {
         id: result.lastInsertRowId,
         user_id: userId,
+        workout_day_id: null,
         date: startedAt,
         plan_name: "Active Workout",
         duration: null,
         exercises: [],
       },
     });
+  },
+
+  initializeSchedule: async (options) => {
+    const db = getDB();
+    const userId = useUserStore.getState().id;
+    if (!userId) {
+      throw new Error("User not initialized. Cannot initialize schedule.");
+    }
+    const shouldForceReset = Boolean(options?.force);
+    if (shouldForceReset) {
+      await db.runAsync("DELETE FROM workout_days WHERE user_id = ?", [userId]);
+    }
+
+    const labels = await getInitialScheduleLabels();
+
+    for (let i = 0; i < 7; i += 1) {
+      const date = new Date();
+      date.setHours(0, 0, 0, 0);
+      date.setDate(date.getDate() + i);
+      const isoDate = date.toISOString().slice(0, 10);
+      const label = labels[i % labels.length];
+
+      await db.runAsync(
+        "INSERT OR IGNORE INTO workout_days (user_id, date, label) VALUES (?, ?, ?)",
+        [userId, isoDate, label]
+      );
+    }
   },
 
   addExercise: async (exerciseData) => {
@@ -285,11 +316,12 @@ async function hydrateActiveWorkout(
   const workout = await db.getFirstAsync<{
     id: number;
     user_id: number;
+    workout_day_id: number | null;
     date: string;
     plan_name: string;
     duration: number | null;
   }>(
-    "SELECT id, user_id, date, plan_name, duration FROM workouts WHERE user_id = ? AND duration IS NULL ORDER BY id DESC LIMIT 1",
+    "SELECT id, user_id, workout_day_id, date, plan_name, duration FROM workouts WHERE user_id = ? AND duration IS NULL ORDER BY id DESC LIMIT 1",
     [userId]
   );
 
@@ -326,6 +358,44 @@ async function hydrateActiveWorkout(
       exercises: hydratedExercises,
     },
   });
+}
+
+async function getInitialScheduleLabels(): Promise<string[]> {
+  const hasApiKey = Boolean(useUserStore.getState().groqApiKey?.trim());
+  if (!hasApiKey) {
+    throw new Error("API key is required to initialize AI schedule.");
+  }
+
+  try {
+    const response = await aiService.sendPrompt(
+      "Create a balanced 7-day workout schedule with short day labels.",
+      `Return strictly:
+      {
+        "labels": ["label1","label2","label3","label4","label5","label6","label7"]
+      }`
+    );
+    if (!response || typeof response !== "object") {
+      throw new Error("AI schedule response is invalid.");
+    }
+    const labelsRaw = (response as Record<string, unknown>).labels;
+    if (!Array.isArray(labelsRaw) || labelsRaw.length < 7) {
+      throw new Error("AI schedule requires 7 labels.");
+    }
+
+    const normalized = labelsRaw
+      .map((value) => (typeof value === "string" ? value.trim() : ""))
+      .filter(Boolean)
+      .slice(0, 7);
+    if (normalized.length !== 7) {
+      throw new Error("AI schedule labels were incomplete.");
+    }
+    return normalized;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error("Could not initialize AI schedule.");
+  }
 }
 
 function normalizePositiveInt(

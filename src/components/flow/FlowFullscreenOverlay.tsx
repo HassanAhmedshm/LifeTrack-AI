@@ -1,10 +1,10 @@
 import { useEffect, useMemo } from "react";
 import {
-  Dimensions,
   ImageBackground,
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { BlurView } from "expo-blur";
@@ -17,7 +17,6 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import type { FlowItem } from "./flowData";
 
 export type OverlayOrigin = {
@@ -34,14 +33,13 @@ interface FlowFullscreenOverlayProps {
   onClosed: () => void;
 }
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
-
 export function FlowFullscreenOverlay({
   item,
   imageUri,
   origin,
   onClosed,
 }: FlowFullscreenOverlayProps) {
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const progress = useSharedValue(0);
   const visible = Boolean(item && origin);
 
@@ -93,16 +91,44 @@ export function FlowFullscreenOverlay({
           resizeMode="cover"
           style={StyleSheet.absoluteFillObject}
         >
-          <Svg style={StyleSheet.absoluteFillObject}>
-            <Defs>
-              <LinearGradient id="fullscreen-vignette" x1="0%" y1="0%" x2="0%" y2="100%">
-                <Stop offset="0%" stopColor="rgba(0,0,0,0.65)" />
-                <Stop offset="45%" stopColor="rgba(0,0,0,0.2)" />
-                <Stop offset="100%" stopColor="rgba(0,0,0,0.9)" />
-              </LinearGradient>
-            </Defs>
-            <Rect width="100%" height="100%" fill="url(#fullscreen-vignette)" />
-          </Svg>
+          <View
+            pointerEvents="none"
+            style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.24)" }]}
+          />
+          <View
+            pointerEvents="none"
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: 0,
+              height: screenHeight * 0.26,
+              backgroundColor: "rgba(0,0,0,0.62)",
+            }}
+          />
+          <View
+            pointerEvents="none"
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: screenHeight * 0.46,
+              backgroundColor: "rgba(0,0,0,0.88)",
+            }}
+          />
+          <View
+            pointerEvents="none"
+            style={{
+              position: "absolute",
+              left: -screenWidth * 0.2,
+              right: -screenWidth * 0.2,
+              bottom: -screenHeight * 0.25,
+              height: screenHeight * 0.58,
+              borderRadius: 999,
+              backgroundColor: "rgba(0,0,0,0.45)",
+            }}
+          />
 
           <View className="flex-1 px-5 pb-10 pt-16">
             <View className="flex-row items-center justify-between">

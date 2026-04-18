@@ -1,6 +1,5 @@
 import { useRef } from "react";
 import { ImageBackground, Pressable, StyleSheet, Text, View } from "react-native";
-import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from "react-native-svg";
 import Animated, {
   Extrapolation,
   interpolate,
@@ -15,6 +14,9 @@ interface FlowCardProps {
   item: FlowItem;
   index: number;
   cardWidth: number;
+  cardHeight: number;
+  itemGap: number;
+  isLast: boolean;
   snapInterval: number;
   scrollX: SharedValue<number>;
   onPress: (item: FlowItem, imageUri: string, cardRef: View | null) => void;
@@ -24,14 +26,15 @@ export function FlowCard({
   item,
   index,
   cardWidth,
+  cardHeight,
+  itemGap,
+  isLast,
   snapInterval,
   scrollX,
   onPress,
 }: FlowCardProps) {
   const cardRef = useRef<View>(null);
   const imageUri = getCategoryImageUrl(item.category, item.id);
-  const gradientId = `flow-vignette-${item.id}`;
-  const topFadeId = `flow-top-fade-${item.id}`;
 
   const animatedStyle = useAnimatedStyle(() => {
     const position = index * snapInterval;
@@ -55,26 +58,54 @@ export function FlowCard({
       accessibilityLabel={`${item.title} card`}
     >
       <Animated.View
-        style={[animatedStyle, { width: cardWidth }]}
-        className="mr-4 h-[430px] overflow-hidden rounded-3xl border border-white/15 bg-card"
+        style={[animatedStyle, { width: cardWidth, height: cardHeight, marginRight: isLast ? 0 : itemGap }]}
+        className="overflow-hidden rounded-3xl border border-white/15 bg-card"
       >
         <ImageBackground source={{ uri: imageUri }} resizeMode="cover" className="h-full w-full">
-          <View className="absolute inset-0 bg-black/35" />
-          <Svg style={StyleSheet.absoluteFillObject}>
-            <Defs>
-              <RadialGradient id={gradientId} cx="50%" cy="42%" r="72%">
-                <Stop offset="35%" stopColor="rgba(0,0,0,0.08)" />
-                <Stop offset="100%" stopColor="rgba(0,0,0,0.82)" />
-              </RadialGradient>
-              <LinearGradient id={topFadeId} x1="0%" y1="0%" x2="0%" y2="100%">
-                <Stop offset="0%" stopColor="rgba(0,0,0,0.55)" />
-                <Stop offset="40%" stopColor="rgba(0,0,0,0.12)" />
-                <Stop offset="100%" stopColor="rgba(0,0,0,0.8)" />
-              </LinearGradient>
-            </Defs>
-            <Rect width="100%" height="100%" fill={`url(#${gradientId})`} />
-            <Rect width="100%" height="100%" fill={`url(#${topFadeId})`} />
-          </Svg>
+          <View
+            pointerEvents="none"
+            style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.22)" }]}
+          />
+          <View
+            pointerEvents="none"
+            style={[
+              {
+                position: "absolute",
+                left: 0,
+                right: 0,
+                top: 0,
+                height: cardHeight * 0.22,
+                backgroundColor: "rgba(0,0,0,0.45)",
+              },
+            ]}
+          />
+          <View
+            pointerEvents="none"
+            style={[
+              {
+                position: "absolute",
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: cardHeight * 0.42,
+                backgroundColor: "rgba(0,0,0,0.8)",
+              },
+            ]}
+          />
+          <View
+            pointerEvents="none"
+            style={[
+              {
+                position: "absolute",
+                left: -cardWidth * 0.15,
+                right: -cardWidth * 0.15,
+                bottom: -cardHeight * 0.26,
+                height: cardHeight * 0.62,
+                borderRadius: 999,
+                backgroundColor: "rgba(0,0,0,0.42)",
+              },
+            ]}
+          />
 
           <View className="h-full justify-between p-5">
             <View className="self-end rounded-full border border-white/30 bg-black/30 p-2">

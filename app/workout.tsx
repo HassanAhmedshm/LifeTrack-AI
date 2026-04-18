@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  Alert,
   FlatList,
   KeyboardAvoidingView,
   Modal,
@@ -10,12 +9,12 @@ import {
 } from "react-native";
 import { Inbox, Send } from "lucide-react-native";
 import { Button } from "../src/components/ui/Button";
-import { Card } from "../src/components/ui/Card";
 import { Input } from "../src/components/ui/Input";
 import { ExerciseCard } from "../src/components/ExerciseCard";
+import { WorkoutSlideshowHeader } from "../src/components/workout/WorkoutSlideshowHeader";
 import { useWorkoutStore } from "../src/store/useWorkoutStore";
 import { useUserStore } from "../src/store/useUserStore";
-import * as aiService from "../src/services/ai";
+import { runAssistantPrompt } from "../src/services/assistant";
 
 const MAX_EXERCISE_SETS = 12;
 const MAX_SET_REPS = 100;
@@ -35,11 +34,29 @@ export default function WorkoutScreen() {
   const [manualReps, setManualReps] = useState("");
   const [manualError, setManualError] = useState("");
   const [isManualAdding, setIsManualAdding] = useState(false);
+  const [aiStatusMessage, setAiStatusMessage] = useState("");
+  const [aiStatusError, setAiStatusError] = useState(false);
+  const [expandedExerciseId, setExpandedExerciseId] = useState<number | null>(null);
+  const [pulseSetIds, setPulseSetIds] = useState<number[]>([]);
+  const [pulseToken, setPulseToken] = useState(0);
 
   const hasApiKey = Boolean(groqApiKey?.trim());
   const aiPlaceholder = hasApiKey
     ? "Ask AI to add an exercise..."
     : "Enter API Key in Settings";
+
+  useEffect(() => {
+    if (!activeWorkout || activeWorkout.exercises.length === 0) {
+      setExpandedExerciseId(null);
+      return;
+    }
+    if (
+      expandedExerciseId !== null &&
+      !activeWorkout.exercises.some((exercise) => exercise.id === expandedExerciseId)
+    ) {
+      setExpandedExerciseId(null);
+    }
+  }, [activeWorkout, expandedExerciseId]);
 
   const handleStartWorkout = async () => {
     setIsStarting(true);
@@ -58,43 +75,32 @@ export default function WorkoutScreen() {
       return;
     }
 
+    setAiStatusMessage("");
+    setAiStatusError(false);
     setIsAiLoading(true);
 
     try {
-      const response = await aiService.sendPrompt(
-        trimmedPrompt,
-        "You are a workout assistant. Respond strictly in JSON: { action: 'ADD_EXERCISE' | 'MESSAGE', payload: { name: string, sets: number, reps: number }, message: string }"
-      );
-      const parsed = parseWorkoutAssistantResponse(response);
-
-      if (parsed.action === "ADD_EXERCISE") {
-        await startWorkout();
-        await addExercise({
-          name: parsed.payload.name,
-          targetSets: parsed.payload.sets,
-          targetReps: parsed.payload.reps,
-        });
-      }
-
-      Alert.alert("Workout Assistant", parsed.message);
+      const result = await runAssistantPrompt(trimmedPrompt, "workout");
       setAiPrompt("");
+      setAiStatusMessage(result.message);
+      const updatedSetIds = result.performedActions
+        .map((action) => {
+          const match = action.match(/^set:\d+:(\d+)$/);
+          if (!match) {
+            return null;
+          }
+          return Number(match[1]);
+        })
+        .filter((value): value is number => Number.isFinite(value));
+      if (updatedSetIds.length > 0) {
+        setPulseSetIds(updatedSetIds);
+        setPulseToken((current) => current + 1);
+      }
     } catch (error) {
       console.error("Workout AI request failed:", error);
-      Alert.alert(
-        "AI Input Error",
-        "Network error or invalid AI response. Please choose how to continue.",
-        [
-          {
-            text: "Try Again",
-            onPress: () => {
-              void runAiPrompt(trimmedPrompt);
-            },
-          },
-          {
-            text: "Add Manually",
-            onPress: () => setIsManualModalVisible(true),
-          },
-        ]
+      setAiStatusError(true);
+      setAiStatusMessage(
+        "Could not apply that command. Try: 'Add morning run to workout'."
       );
     } finally {
       setIsAiLoading(false);
@@ -152,16 +158,23 @@ export default function WorkoutScreen() {
     }
   };
 
+  const focusedExerciseName =
+    activeWorkout?.exercises.find((exercise) => exercise.id === expandedExerciseId)
+      ?.name ??
+    activeWorkout?.exercises[0]?.name ??
+    "Select an exercise";
+
   return (
     <KeyboardAvoidingView
       className="flex-1 bg-dark"
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View className="flex-1 bg-dark px-4 pt-4">
-        <Text className="text-3xl font-bold text-white">Workout</Text>
-        <Text className="mt-2 text-white/70">
-          Expand an exercise to update set-level progress.
-        </Text>
+        <WorkoutSlideshowHeader
+          title="Workout"
+          subtitle="Log quickly with sleek set paging and AI smart updates."
+          focusText={focusedExerciseName}
+        />
 
         <View className="flex-1">
           {!activeWorkout ? (
@@ -205,12 +218,36 @@ export default function WorkoutScreen() {
               keyExtractor={(item) => item.id.toString()}
               contentContainerClassName="gap-3 pb-8"
               showsVerticalScrollIndicator={false}
-              renderItem={({ item }) => <ExerciseCard exercise={item} />}
+              renderItem={({ item }) => (
+                <ExerciseCard
+                  exercise={item}
+                  isExpanded={expandedExerciseId === item.id}
+                  isDimmed={
+                    expandedExerciseId !== null && expandedExerciseId !== item.id
+                  }
+                  onToggleExpand={() =>
+                    setExpandedExerciseId((current) =>
+                      current === item.id ? null : item.id
+                    )
+                  }
+                  highlightSetIds={pulseSetIds}
+                  highlightToken={pulseToken}
+                />
+              )}
             />
           )}
         </View>
 
         <View className="bg-card px-4 py-3">
+          {aiStatusMessage ? (
+            <Text
+              className={`mb-2 text-sm ${
+                aiStatusError ? "text-red-400" : "text-white/75"
+              }`}
+            >
+              {aiStatusMessage}
+            </Text>
+          ) : null}
           <View className="flex-row items-center gap-2">
             <View className="flex-1">
               <Input
@@ -301,81 +338,4 @@ export default function WorkoutScreen() {
       </Modal>
     </KeyboardAvoidingView>
   );
-}
-
-type WorkoutAssistantResponse = {
-  action: "MESSAGE";
-  message: string;
-} | {
-  action: "ADD_EXERCISE";
-  payload: {
-    name: string;
-    sets: number;
-    reps: number;
-  };
-  message: string;
-};
-
-function parseWorkoutAssistantResponse(response: unknown): WorkoutAssistantResponse {
-  if (!response || typeof response !== "object") {
-    throw new Error("Invalid AI response shape.");
-  }
-
-  const parsed = response as Record<string, unknown>;
-  const action = parsed.action;
-  const payload = parsed.payload;
-  const message = parsed.message;
-
-  if (action !== "ADD_EXERCISE" && action !== "MESSAGE") {
-    throw new Error("Invalid AI action.");
-  }
-  if (typeof message !== "string" || !message.trim()) {
-    throw new Error("Missing AI message.");
-  }
-
-  if (action === "MESSAGE") {
-    return {
-      action,
-      message: message.trim(),
-    };
-  }
-
-  if (!payload || typeof payload !== "object") {
-    throw new Error("Missing AI payload.");
-  }
-
-  const payloadRecord = payload as Record<string, unknown>;
-  const name = payloadRecord.name;
-  const sets = payloadRecord.sets;
-  const reps = payloadRecord.reps;
-
-  if (typeof name !== "string" || !name.trim()) {
-    throw new Error("Invalid AI payload name.");
-  }
-  if (
-    typeof sets !== "number" ||
-    !Number.isFinite(sets) ||
-    sets <= 0 ||
-    sets > MAX_EXERCISE_SETS
-  ) {
-    throw new Error("Invalid AI payload sets.");
-  }
-  if (
-    typeof reps !== "number" ||
-    !Number.isFinite(reps) ||
-    reps <= 0 ||
-    reps > MAX_SET_REPS
-  ) {
-    throw new Error("Invalid AI payload reps.");
-  }
-
-  return {
-    action,
-    message: message.trim(),
-    payload: {
-      name: name.trim(),
-      sets: Math.round(sets),
-      reps: Math.round(reps),
-    },
-  };
 }

@@ -11,8 +11,10 @@ import {
 import { Send } from "lucide-react-native";
 import { Input } from "../src/components/ui/Input";
 import { Button } from "../src/components/ui/Button";
+import { ScreenHeader } from "../src/components/ui/ScreenHeader";
 import { useUserStore } from "../src/store/useUserStore";
 import * as aiService from "../src/services/ai";
+import { runAssistantPrompt } from "../src/services/assistant";
 
 type ChatMessage = {
   id: string;
@@ -74,14 +76,10 @@ export default function ChefScreen() {
     setIsChatLoading(true);
 
     try {
-      const response = await aiService.sendPrompt(
-        prompt,
-        "Respond in JSON format with a 'message' string field."
-      );
-      const message = extractAiMessage(response);
+      const result = await runAssistantPrompt(prompt, "chef");
       setMessages((prev) => [
         ...prev,
-        { id: `chef-ai-${Date.now()}`, role: "ai", content: message },
+        { id: `chef-ai-${Date.now()}`, role: "ai", content: result.message },
       ]);
     } catch (error) {
       console.error("Chef chat request failed:", error);
@@ -151,10 +149,10 @@ export default function ChefScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View className="flex-1 bg-dark px-4 pt-4">
-        <Text className="text-3xl font-bold text-white">Chef AI</Text>
-        <Text className="mt-2 text-white/70">
-          Chat while you cook, then check off each recipe step.
-        </Text>
+        <ScreenHeader
+          title="Chef AI"
+          subtitle="Chat while you cook, then check off each recipe step."
+        />
 
         <View className="mt-4 flex-[3] overflow-hidden rounded-2xl bg-card">
           <ScrollView className="flex-1 px-4 pt-4">

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Text, View } from "react-native";
 import { Input } from "../src/components/ui/Input";
 import { Button } from "../src/components/ui/Button";
+import { ScreenHeader } from "../src/components/ui/ScreenHeader";
 import { useUserStore } from "../src/store/useUserStore";
 
 export default function SettingsScreen() {
@@ -32,10 +33,10 @@ export default function SettingsScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View className="flex-1 bg-dark px-4 pt-4">
-        <Text className="text-3xl font-bold text-white">Settings</Text>
-        <Text className="mt-2 text-white/70">
-          Manage your Groq API key for AI features.
-        </Text>
+        <ScreenHeader
+          title="Settings"
+          subtitle="Manage your Groq API key for AI features."
+        />
 
         <View className="mt-6 rounded-2xl bg-card p-4">
           <Text className="text-sm font-semibold text-white/80">Groq API Key</Text>

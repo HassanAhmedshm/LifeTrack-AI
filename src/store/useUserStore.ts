@@ -17,6 +17,10 @@ export interface UserStore {
   completeOnboarding: (payload: {
     name: string;
     primaryGoal: string;
+    age?: number | null;
+    allergies?: string;
+    dietaryPreference?: string;
+    activityLevel?: string;
   }) => Promise<void>;
   hydrate: () => Promise<void>;
 }
@@ -69,15 +73,35 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
     const name = payload.name.trim();
     const primaryGoal = payload.primaryGoal.trim();
+    const allergies = payload.allergies?.trim() ?? "";
+    const dietaryPreference = payload.dietaryPreference?.trim() ?? "";
+    const activityLevel = payload.activityLevel?.trim() ?? "";
+    const age =
+      payload.age !== undefined && payload.age !== null
+        ? Math.round(Number(payload.age))
+        : null;
     if (!name || !primaryGoal) {
       throw new Error("Name and primary goal are required.");
+    }
+    if (age !== null && (!Number.isFinite(age) || age <= 0 || age > 120)) {
+      throw new Error("Age must be between 1 and 120.");
     }
 
     const db = getDB();
     try {
       await db.runAsync(
         "UPDATE users SET onboarding_completed = 1, preferences_json = ? WHERE id = ?",
-        [JSON.stringify({ name, primaryGoal }), id]
+        [
+          JSON.stringify({
+            name,
+            primaryGoal,
+            age,
+            allergies,
+            dietaryPreference,
+            activityLevel,
+          }),
+          id,
+        ]
       );
       set({ onboardingCompleted: true, name });
     } catch (error) {

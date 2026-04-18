@@ -1,16 +1,20 @@
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
+  Pressable,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Text,
   View,
 } from "react-native";
-import { Send } from "lucide-react-native";
+import { Camera, Mic, Send } from "lucide-react-native";
+import * as Haptics from "expo-haptics";
 import { Input } from "../../src/components/ui/Input";
 import { Button } from "../../src/components/ui/Button";
 import { useUserStore } from "../../src/store/useUserStore";
-import * as aiService from "../../src/services/ai";
+import { runAssistantPrompt } from "../../src/services/assistant";
+import { SuggestionChips } from "../../src/components/chat/SuggestionChips";
+import { ChatBubble } from "../../src/components/chat/ChatBubble";
+import { WaveformPlayer } from "../../src/components/chat/WaveformPlayer";
 
 type ChatMessage = {
   id: string;
@@ -32,11 +36,21 @@ export default function ChatbotScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const scrollViewRef = useRef<ScrollView | null>(null);
   const hasApiKey = Boolean(groqApiKey?.trim());
   const isComposerDisabled = !hasApiKey || isLoading;
   const placeholder = hasApiKey
     ? "Type your message..."
     : "Enter API Key in Settings";
+  const suggestionChips = useMemo(
+    () => [
+      "Build a sustainable fat-loss routine",
+      "Add a morning run to my week",
+      "Plan macros for recovery day",
+      "Create a 4-day strength split",
+    ],
+    []
+  );
 
   const handleSend = async () => {
     if (isComposerDisabled) {
@@ -59,17 +73,19 @@ export default function ChatbotScreen() {
     setIsLoading(true);
 
     try {
-      const response = await aiService.sendPrompt(
-        prompt,
-        "Respond in JSON format with a 'message' string field."
-      );
-      const message = extractAiMessage(response);
+      const result = await runAssistantPrompt(prompt, "chat");
+      const actionSuffix =
+        result.performedActions.length > 0
+          ? ` (${result.performedActions.length} action${
+              result.performedActions.length > 1 ? "s" : ""
+            } applied)`
+          : "";
       setMessages((currentMessages) => [
         ...currentMessages,
         {
           id: `ai-${Date.now()}`,
           role: "ai",
-          content: message,
+          content: `${result.message}${actionSuffix}`,
         },
       ]);
     } catch (error) {
@@ -88,14 +104,38 @@ export default function ChatbotScreen() {
     }
   };
 
+  const handleSuggestionPress = (chip: string) => {
+    if (isComposerDisabled) {
+      return;
+    }
+    setInputText(chip);
+  };
+
+  const handleToolLongPress = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-dark"
+      className="flex-1 bg-[#0f0f0f]"
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View className="flex-1 bg-dark">
-        <ScrollView className="flex-1 px-4 pt-4">
+      <View className="flex-1 bg-[#0f0f0f]">
+        <ScrollView
+          ref={scrollViewRef}
+          className="flex-1 px-4 pt-4"
+          onContentSizeChange={() =>
+            scrollViewRef.current?.scrollToEnd({ animated: true })
+          }
+        >
           <View className="gap-3 pb-6">
+            <SuggestionChips
+              chips={suggestionChips}
+              disabled={isComposerDisabled}
+              onSelect={handleSuggestionPress}
+            />
+            <WaveformPlayer sourceUrl="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" />
+
             {messages.map((message) => {
               const isUser = message.role === "user";
               return (
@@ -103,25 +143,27 @@ export default function ChatbotScreen() {
                   key={message.id}
                   className={isUser ? "items-end" : "items-start"}
                 >
-                  <View
-                    className={`max-w-[85%] px-4 py-3 ${
-                      isUser
-                        ? "rounded-2xl rounded-br-none bg-brand"
-                        : message.isError
-                        ? "rounded-2xl rounded-bl-none border border-red-500 bg-red-500/20"
-                        : "rounded-2xl rounded-bl-none bg-card"
-                    }`}
-                  >
-                    <Text className="text-base text-white">{message.content}</Text>
-                  </View>
+                  <ChatBubble
+                    role={message.role}
+                    content={message.content}
+                    isError={message.isError}
+                  />
                 </View>
               );
             })}
           </View>
         </ScrollView>
 
-        <View className="bg-card px-4 py-3">
+        <View className="border-t border-white/10 bg-black/70 px-4 py-3">
           <View className="flex-row items-center gap-2">
+            <Pressable
+              onLongPress={handleToolLongPress}
+              className="h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10"
+              accessibilityRole="button"
+              accessibilityLabel="Open camera tools"
+            >
+              <Camera size={18} color="white" />
+            </Pressable>
             <View className="flex-1">
               <Input
                 placeholder={placeholder}
@@ -132,6 +174,14 @@ export default function ChatbotScreen() {
                 editable={!isComposerDisabled}
               />
             </View>
+            <Pressable
+              onLongPress={handleToolLongPress}
+              className="h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10"
+              accessibilityRole="button"
+              accessibilityLabel="Open microphone tools"
+            >
+              <Mic size={18} color="white" />
+            </Pressable>
             <Button
               onPress={handleSend}
               label="Send message"
@@ -146,18 +196,4 @@ export default function ChatbotScreen() {
       </View>
     </KeyboardAvoidingView>
   );
-}
-
-function extractAiMessage(response: unknown): string {
-  if (!response || typeof response !== "object") {
-    throw new Error("Invalid AI response");
-  }
-
-  const record = response as Record<string, unknown>;
-  const message = record.message;
-  if (typeof message !== "string" || !message.trim()) {
-    throw new Error("Missing AI message field");
-  }
-
-  return message.trim();
 }

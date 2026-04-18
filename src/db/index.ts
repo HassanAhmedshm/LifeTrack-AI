@@ -25,9 +25,17 @@ export interface Goal {
 export interface Workout {
   id: number;
   user_id: number;
+  workout_day_id: number | null;
   date: string;
   plan_name: string;
   duration: number;
+}
+
+export interface WorkoutDay {
+  id: number;
+  user_id: number;
+  date: string;
+  label: string;
 }
 
 export interface Exercise {
@@ -104,12 +112,15 @@ async function performInitialization(): Promise<SQLite.SQLiteDatabase> {
       CREATE TABLE IF NOT EXISTS workouts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
+        workout_day_id INTEGER,
         date TEXT NOT NULL,
         plan_name TEXT NOT NULL,
         duration INTEGER,
-        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY(workout_day_id) REFERENCES workout_days(id) ON DELETE SET NULL
       );
     `);
+    await ensureWorkoutDaySchema(db);
     await ensureWorkoutSchema(db);
 
     // Create exercises table
@@ -185,6 +196,19 @@ async function ensureUserSchema(database: SQLite.SQLiteDatabase): Promise<void> 
 }
 
 async function ensureWorkoutSchema(database: SQLite.SQLiteDatabase): Promise<void> {
+  const workoutColumns = await database.getAllAsync<{ name: string }>(
+    "PRAGMA table_info(workouts)"
+  );
+  const hasWorkoutDayId = workoutColumns.some(
+    (column) => column.name === "workout_day_id"
+  );
+
+  if (!hasWorkoutDayId) {
+    await database.execAsync(
+      "ALTER TABLE workouts ADD COLUMN workout_day_id INTEGER;"
+    );
+  }
+
   // Keep only the latest active workout (duration IS NULL) per user before adding invariant index.
   await database.execAsync(`
     UPDATE workouts
@@ -206,6 +230,25 @@ async function ensureWorkoutSchema(database: SQLite.SQLiteDatabase): Promise<voi
     CREATE UNIQUE INDEX IF NOT EXISTS idx_workouts_single_active_per_user
     ON workouts(user_id)
     WHERE duration IS NULL;
+  `);
+  await database.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_workouts_workout_day_id
+    ON workouts(workout_day_id);
+  `);
+}
+
+async function ensureWorkoutDaySchema(
+  database: SQLite.SQLiteDatabase
+): Promise<void> {
+  await database.execAsync(`
+    CREATE TABLE IF NOT EXISTS workout_days (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      date TEXT NOT NULL,
+      label TEXT NOT NULL,
+      UNIQUE(user_id, date),
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
   `);
 }
 
