@@ -1,0 +1,158 @@
+import { create } from "zustand";
+import * as SecureStore from "expo-secure-store";
+import { getDB } from "../db/index";
+import type { User } from "../db/index";
+
+export interface UserStore {
+  // State
+  id: number | null;
+  groqApiKey: string | null;
+  onboardingCompleted: boolean;
+  isHydrated: boolean;
+  isLoading: boolean;
+
+  // Actions
+  setApiKey: (key: string) => Promise<void>;
+  completeOnboarding: (payload: {
+    name: string;
+    primaryGoal: string;
+  }) => Promise<void>;
+  hydrate: () => Promise<void>;
+}
+
+// Guard against concurrent hydration
+let hydratePromise: Promise<void> | null = null;
+const GROQ_API_KEY_STORAGE_KEY = "groq_api_key";
+
+export const useUserStore = create<UserStore>((set, get) => ({
+  // Initial state
+  id: null,
+  groqApiKey: null,
+  onboardingCompleted: false,
+  isHydrated: false,
+  isLoading: false,
+
+  // Update API key in secure storage and sync UI state
+  setApiKey: async (key: string) => {
+    const { id } = get();
+    if (!id) {
+      throw new Error("User not initialized. Cannot set API key.");
+    }
+
+    const db = getDB();
+    const normalizedKey = key.trim();
+    const nextKey = normalizedKey ? normalizedKey : null;
+    try {
+      if (nextKey === null) {
+        await SecureStore.deleteItemAsync(GROQ_API_KEY_STORAGE_KEY);
+      } else {
+        await SecureStore.setItemAsync(GROQ_API_KEY_STORAGE_KEY, nextKey);
+      }
+
+      // Clear legacy plaintext value from SQLite.
+      await db.runAsync("UPDATE users SET groq_api_key = NULL WHERE id = ?", [id]);
+      set({ groqApiKey: nextKey });
+    } catch (error) {
+      console.error("✗ Failed to set API key:", error);
+      throw error;
+    }
+  },
+
+  // Mark onboarding complete in store and sync to SQLite
+  completeOnboarding: async (payload) => {
+    const { id } = get();
+    if (!id) {
+      throw new Error("User not initialized. Cannot complete onboarding.");
+    }
+
+    const name = payload.name.trim();
+    const primaryGoal = payload.primaryGoal.trim();
+    if (!name || !primaryGoal) {
+      throw new Error("Name and primary goal are required.");
+    }
+
+    const db = getDB();
+    try {
+      await db.runAsync(
+        "UPDATE users SET onboarding_completed = 1, preferences_json = ? WHERE id = ?",
+        [JSON.stringify({ name, primaryGoal }), id]
+      );
+      set({ onboardingCompleted: true });
+    } catch (error) {
+      console.error("✗ Failed to complete onboarding:", error);
+      throw error;
+    }
+  },
+
+  // Load user data from SQLite and populate store
+  // Uses a promise guard to prevent concurrent hydration
+  hydrate: async () => {
+    // If already hydrated, return immediately
+    if (get().isHydrated) {
+      return;
+    }
+
+    // If hydration is in progress, wait for it
+    if (hydratePromise) {
+      return hydratePromise;
+    }
+
+    // Start hydration
+    hydratePromise = performHydration(set);
+    try {
+      await hydratePromise;
+    } finally {
+      hydratePromise = null;
+    }
+  },
+}));
+
+async function performHydration(
+  set: (state: Partial<UserStore>) => void
+): Promise<void> {
+  set({ isLoading: true });
+
+  try {
+    const db = getDB();
+    const user = await db.getFirstAsync<User>(
+      "SELECT * FROM users ORDER BY id LIMIT 1"
+    );
+    let groqApiKey = await SecureStore.getItemAsync(GROQ_API_KEY_STORAGE_KEY);
+    const normalizedStoredKey = groqApiKey?.trim() ?? "";
+    if (!normalizedStoredKey && groqApiKey !== null) {
+      await SecureStore.deleteItemAsync(GROQ_API_KEY_STORAGE_KEY);
+    }
+    groqApiKey = normalizedStoredKey || null;
+
+    if (!user) {
+      throw new Error(
+        "User record not found in database. App cannot initialize."
+      );
+    }
+
+    // One-time migration from legacy plaintext SQLite storage.
+    const legacyDbKey = user.groq_api_key?.trim() ?? "";
+    if (!groqApiKey && legacyDbKey) {
+      await SecureStore.setItemAsync(GROQ_API_KEY_STORAGE_KEY, legacyDbKey);
+      await db.runAsync("UPDATE users SET groq_api_key = NULL WHERE id = ?", [
+        user.id,
+      ]);
+      groqApiKey = legacyDbKey;
+    }
+
+    set({
+      id: user.id,
+      groqApiKey,
+      onboardingCompleted: Boolean(user.onboarding_completed),
+      isHydrated: true,
+      isLoading: false,
+    });
+
+    console.log("✓ User store hydrated successfully");
+  } catch (error) {
+    set({ isLoading: false });
+    console.error("✗ Failed to hydrate user store:", error);
+    throw error;
+  }
+}
+
