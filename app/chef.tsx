@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -47,6 +48,7 @@ export default function ChefScreen() {
   const [inputText, setInputText] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [steps, setSteps] = useState<RecipeStep[]>(INITIAL_STEPS);
+  const [pendingEncouragementCount, setPendingEncouragementCount] = useState(0);
 
   const hasApiKey = Boolean(groqApiKey?.trim());
   const isComposerDisabled = !hasApiKey || isChatLoading;
@@ -116,6 +118,7 @@ export default function ChefScreen() {
   };
 
   const triggerCompletionEncouragement = async (stepName: string) => {
+    setPendingEncouragementCount((count) => count + 1);
     try {
       const response = await aiService.sendPrompt(
         `The user just completed step: ${stepName}. Give a very short, 1-sentence encouraging response.`,
@@ -137,6 +140,8 @@ export default function ChefScreen() {
           isError: true,
         },
       ]);
+    } finally {
+      setPendingEncouragementCount((count) => Math.max(0, count - 1));
     }
   };
 
@@ -204,7 +209,12 @@ export default function ChefScreen() {
         </View>
 
         <View className="mt-4 flex-[2] rounded-2xl bg-card p-4">
-          <Text className="text-lg font-semibold text-white">Interactive Recipe</Text>
+          <View className="flex-row items-center justify-between">
+            <Text className="text-lg font-semibold text-white">Interactive Recipe</Text>
+            {pendingEncouragementCount > 0 ? (
+              <ActivityIndicator size="small" color="#FF7A00" />
+            ) : null}
+          </View>
           <ScrollView className="mt-3">
             <View className="gap-3 pb-2">
               {steps.map((step) => (

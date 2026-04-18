@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { Send } from "lucide-react-native";
+import { Inbox, Send } from "lucide-react-native";
 import { Button } from "../src/components/ui/Button";
 import { Card } from "../src/components/ui/Card";
 import { Input } from "../src/components/ui/Input";
@@ -165,35 +165,48 @@ export default function WorkoutScreen() {
 
         <View className="flex-1">
           {!activeWorkout ? (
-          <Card className="mt-4">
-            <Text className="text-base text-white/80">
-              No active workout yet. Start one to begin logging sets.
-            </Text>
-            <View className="mt-4">
-              <Button
-                label="Start Workout"
-                onPress={handleStartWorkout}
-                isLoading={isStarting}
-                disabled={isStarting}
-              />
+            <View className="mt-6 items-center justify-center gap-3 rounded-2xl bg-card p-6">
+              <Inbox size={28} color="#9CA3AF" />
+              <Text className="text-center text-base text-gray-200">
+                No data yet. Ask the AI to add one!
+              </Text>
+              <View className="mt-1 w-full gap-2">
+                <Button
+                  label="Start Workout"
+                  onPress={handleStartWorkout}
+                  isLoading={isStarting}
+                  disabled={isStarting}
+                />
+                <Button
+                  label="Add Manually"
+                  onPress={() => setIsManualModalVisible(true)}
+                  variant="secondary"
+                />
+              </View>
             </View>
-          </Card>
           ) : activeWorkout.exercises.length === 0 ? (
-          <Card className="mt-4">
-            <Text className="text-base text-white/80">
-              Workout started. Add exercises from your workout flow to track sets
-              here.
-            </Text>
-          </Card>
+            <View className="mt-6 items-center justify-center gap-3 rounded-2xl bg-card p-6">
+              <Inbox size={28} color="#9CA3AF" />
+              <Text className="text-center text-base text-gray-200">
+                No data yet. Ask the AI to add one!
+              </Text>
+              <View className="mt-1 w-full">
+                <Button
+                  label="Add Manually"
+                  onPress={() => setIsManualModalVisible(true)}
+                  variant="secondary"
+                />
+              </View>
+            </View>
           ) : (
-          <FlatList
-            className="mt-4"
-            data={activeWorkout.exercises}
-            keyExtractor={(item) => item.id.toString()}
-            contentContainerClassName="gap-3 pb-8"
-            showsVerticalScrollIndicator={false}
-            renderItem={({ item }) => <ExerciseCard exercise={item} />}
-          />
+            <FlatList
+              className="mt-4"
+              data={activeWorkout.exercises}
+              keyExtractor={(item) => item.id.toString()}
+              contentContainerClassName="gap-3 pb-8"
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item }) => <ExerciseCard exercise={item} />}
+            />
           )}
         </View>
 

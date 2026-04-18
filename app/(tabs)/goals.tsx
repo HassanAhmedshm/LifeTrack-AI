@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { Inbox } from "lucide-react-native";
 import { Input } from "../../src/components/ui/Input";
 import { Button } from "../../src/components/ui/Button";
 import { Card } from "../../src/components/ui/Card";
@@ -77,11 +78,15 @@ export default function GoalsScreen() {
           contentContainerStyle={{ paddingTop: 16, paddingBottom: 110 }}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <Card>
-              <Text className="text-base text-white/80">
-                No active goals yet. Tap + to add your first goal.
+            <View className="items-center justify-center py-16">
+              <Inbox size={28} color="#9CA3AF" />
+              <Text className="mt-3 text-center text-base text-gray-200">
+                No data yet. Ask the AI to add one!
               </Text>
-            </Card>
+              <Text className="mt-1 text-center text-sm text-white/60">
+                Or tap + to add one manually.
+              </Text>
+            </View>
           }
           renderItem={({ item }) => {
             const safeTarget = item.target_value > 0 ? item.target_value : 1;

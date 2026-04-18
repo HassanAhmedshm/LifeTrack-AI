@@ -3,6 +3,7 @@ import { useUserStore } from "../store/useUserStore";
 const GROQ_CHAT_COMPLETIONS_URL =
   "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_MODEL = "openai/gpt-oss-120b";
+const AI_REQUEST_TIMEOUT_MS = 20000;
 
 type ChatMessage = {
   role: "system" | "user";
@@ -72,18 +73,31 @@ export async function sendPrompt(
       ]
     : [{ role: "user", content: normalizedPrompt }];
 
-  const response = await fetch(GROQ_CHAT_COMPLETIONS_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: GROQ_MODEL,
-      messages,
-      response_format: { type: "json_object" },
-    }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), AI_REQUEST_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await fetch(GROQ_CHAT_COMPLETIONS_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages,
+        response_format: { type: "json_object" },
+      }),
+    });
+  } catch (error) {
+    if (isTimeoutOrNetworkError(error)) {
+      return createSafeFallbackResponse(schemaInstruction);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   const rawResponse = await response.text();
   const payload = parseJsonPayload(rawResponse);
@@ -109,4 +123,31 @@ export async function sendPrompt(
   }
 
   return parsedContent;
+}
+
+function isTimeoutOrNetworkError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const message = error.message.toLowerCase();
+  return (
+    error.name === "AbortError" ||
+    message.includes("timed out") ||
+    message.includes("timeout") ||
+    message.includes("network request failed") ||
+    message.includes("network error")
+  );
+}
+
+function createSafeFallbackResponse(schemaInstruction?: string): unknown {
+  const message =
+    "I couldn't reach the AI service right now. Please try again in a moment.";
+  const normalizedSchema = schemaInstruction?.toUpperCase() ?? "";
+
+  if (normalizedSchema.includes("ADD_EXERCISE")) {
+    return { action: "MESSAGE", message };
+  }
+
+  return { message };
 }
