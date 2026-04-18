@@ -119,8 +119,8 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     }
 
     const name = exerciseData.name.trim();
-    const targetSets = normalizePositiveInt(exerciseData.targetSets, 3);
-    const targetReps = normalizePositiveInt(exerciseData.targetReps, 10);
+    const targetSets = normalizePositiveInt(exerciseData.targetSets, 3, 12);
+    const targetReps = normalizePositiveInt(exerciseData.targetReps, 10, 100);
     const targetWeight =
       exerciseData.targetWeight !== undefined
         ? normalizeOptionalNumber(exerciseData.targetWeight)
@@ -328,14 +328,18 @@ async function hydrateActiveWorkout(
   });
 }
 
-function normalizePositiveInt(value: number | undefined, fallback: number): number {
+function normalizePositiveInt(
+  value: number | undefined,
+  fallback: number,
+  max: number
+): number {
   if (value === undefined) {
     return fallback;
   }
 
   const normalized = Math.round(Number(value));
-  if (!Number.isFinite(normalized) || normalized <= 0) {
-    throw new Error("Numeric value must be a positive number.");
+  if (!Number.isFinite(normalized) || normalized <= 0 || normalized > max) {
+    throw new Error(`Numeric value must be between 1 and ${max}.`);
   }
   return normalized;
 }
