@@ -1,9 +1,11 @@
 import { Pressable, ScrollView, Text, View } from "react-native";
+import { useRouter } from "expo-router";
 import { Card } from "../../src/components/ui/Card";
 import { useUserStore } from "../../src/store/useUserStore";
 import { useGoalStore } from "../../src/store/useGoalStore";
 
 export default function HomeScreen() {
+  const router = useRouter();
   const userName = useUserStore((state) => state.name);
   const goals = useGoalStore((state) => state.goals);
 
@@ -66,14 +68,19 @@ export default function HomeScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerClassName="gap-2 pr-2"
         >
-          {["Log Workout", "Chef AI", "Flow Scheduler"].map((label) => (
+          {[
+            { label: "Log Workout", onPress: () => router.push("/workout") },
+            { label: "Chef AI" },
+            { label: "Flow Scheduler" },
+          ].map((item) => (
             <Pressable
-              key={label}
+              key={item.label}
               className="rounded-full bg-card px-4 py-2"
               accessibilityRole="button"
-              accessibilityLabel={label}
+              accessibilityLabel={item.label}
+              onPress={item.onPress}
             >
-              <Text className="text-sm font-medium text-white">{label}</Text>
+              <Text className="text-sm font-medium text-white">{item.label}</Text>
             </Pressable>
           ))}
         </ScrollView>

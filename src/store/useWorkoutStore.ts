@@ -194,16 +194,36 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       throw new Error("Set not found in active workout.");
     }
 
-    const nextWeight =
-      data.weight !== undefined ? normalizeOptionalNumber(data.weight) : currentSet.weight;
-    const nextReps =
-      data.reps !== undefined ? normalizeOptionalNumber(data.reps) : currentSet.reps;
-    const nextCompleted =
-      data.completed !== undefined ? normalizeCompletedValue(data.completed) : currentSet.completed;
+    const setClauses: string[] = [];
+    const params: Array<number | null> = [];
+    const nextValues: Partial<ActiveSet> = {};
+
+    if (data.weight !== undefined) {
+      const nextWeight = normalizeOptionalNumber(data.weight);
+      setClauses.push("weight = ?");
+      params.push(nextWeight);
+      nextValues.weight = nextWeight;
+    }
+    if (data.reps !== undefined) {
+      const nextReps = normalizeOptionalNumber(data.reps);
+      setClauses.push("reps = ?");
+      params.push(nextReps);
+      nextValues.reps = nextReps;
+    }
+    if (data.completed !== undefined) {
+      const nextCompleted = normalizeCompletedValue(data.completed);
+      setClauses.push("completed = ?");
+      params.push(nextCompleted);
+      nextValues.completed = nextCompleted;
+    }
+
+    if (setClauses.length === 0) {
+      return;
+    }
 
     await db.runAsync(
-      "UPDATE sets SET weight = ?, reps = ?, completed = ? WHERE id = ? AND exercise_id = ?",
-      [nextWeight, nextReps, nextCompleted, setId, exerciseId]
+      `UPDATE sets SET ${setClauses.join(", ")} WHERE id = ? AND exercise_id = ?`,
+      [...params, setId, exerciseId]
     );
 
     set((state) => ({
@@ -216,12 +236,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
                     ...exercise,
                     sets: exercise.sets.map((setItem) =>
                       setItem.id === setId
-                        ? {
-                            ...setItem,
-                            weight: nextWeight,
-                            reps: nextReps,
-                            completed: nextCompleted,
-                          }
+                        ? { ...setItem, ...nextValues }
                         : setItem
                     ),
                   }
