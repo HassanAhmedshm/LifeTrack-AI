@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head> 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goals - Life Track AI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="./fontawesome-free-6.7.1-web/css/all.css">
+    <link rel="stylesheet" href="./css/main.css">
+
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --deep-black: #0f0f0f;
+            --dark-grey: #333333;
+            --medium-grey: #555555;
+            --bright-yellow: #f2c464;
+            --light-grey: #f2f2f2;
+            --white: #ffffff;
+            --warm-beige: #c9bbaa;
+            --progress-bar-bg: #4a4a4a;
+            --border-color: var(--medium-grey);
+            --font-family: "Manrope", sans-serif;
+            --mobile-max-width: 480px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--deep-black);
+            color: var(--white);
+            line-height: 1.6;
+            min-height: 100vh;
+            /* Center content for mobile view */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .goals-container {
+            width: 100%;
+            max-width: var(--mobile-max-width);
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            /* Add padding for header/footer/content */
+            padding-top: 70px; /* Space for fixed header */
+            padding-bottom: 150px; /* Space for AI input + nav */
+        }
+
+        /* Header (Assuming fixed header like home.html) */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: var(--mobile-max-width);
+            height: 60px;
+            background-color: var(--deep-black);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 1rem;
+            z-index: 1000;
+            border-bottom: 1px solid var(--dark-grey);
+        }
+
+        .top-bar .icon-btn {
+            background: none;
+            border: none;
+            color: var(--white);
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        .top-bar h1 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--white);
+        }
+
+        /* Main Content Area */
+        main {
+            width: 100%;
+            padding: 1rem;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .goals-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .goal-card {
+            background-color: var(--dark-grey);
+            border-radius: 12px;
+            padding: 1rem 1.2rem;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .goal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .goal-title {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--white);
+        }
+
+        .goal-title i {
+            color: var(--bright-yellow);
+            font-size: 1.2rem;
+            width: 20px; /* Fixed width for alignment */
+            text-align: center;
+        }
+
+        .goal-actions button {
+             background: none;
+             border: none;
+             color: var(--warm-beige);
+             cursor: pointer;
+             font-size: 1rem;
+             padding: 0.3rem;
+             transition: color 0.2s ease;
+        }
+        .goal-actions button:hover {
+             color: var(--bright-yellow);
+        }
+
+
+        .goal-progress {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background-color: var(--progress-bar-bg);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%; /* Default width, update with JS */
+            background-color: var(--bright-yellow);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-values {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--light-grey);
+        }
+        .current-value { font-weight: 500; }
+        .target-value { opacity: 0.8; }
+
+
+        /* AI Input Area (Assuming fixed bottom area like workouts.html) */
+        .ai-input-section {
+            position: fixed;
+            bottom: 0px; /* Adjust based on actual bottom nav height */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: var(--mobile-max-width);
+            background-color: var(--deep-black);
+            padding: 10px 15px 15px 15px; /* Add padding bottom */
+            border-top: 1px solid var(--dark-grey);
+            z-index: 900; /* Below header, above content potentially */
+        }
+
+        .ai-input-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background-color: var(--dark-grey);
+            border-radius: 25px;
+            padding: 5px 10px;
+        }
+
+        #ai-goal-input {
+            flex-grow: 1;
+            padding: 10px 15px;
+            font-size: 1em;
+            color: var(--white);
+            background-color: transparent; /* Input takes container bg */
+            border: none;
+            outline: none;
+        }
+        #ai-goal-input::placeholder {
+            color: var(--light-grey);
+            opacity: 0.7;
+        }
+
+        .ai-input-container .icon-button {
+            background: none;
+            border: none;
+            outline: none;
+            color: var(--bright-yellow);
+            font-size: 1.2rem; /* Slightly smaller */
+            cursor: pointer;
+            transition: color 0.3s ease;
+            padding: 8px;
+            min-width: auto;
+            min-height: auto;
+        }
+
+        /* Bottom Nav Placeholder (Assuming fixed like home.html) */
+        
+
+    </style>
+</head>
+<body>
+    <div class="goals-container">
+        <!-- Fixed Top Bar -->
+        <header class="top-bar">
+            <button class="icon-btn back-btn" aria-label="Back"><i class="fas fa-chevron-left"></i></button>
+            <h1>Goals</h1>
+            <button class="icon-btn filter-btn" aria-label="Filter Goals"><i class="fas fa-filter"></i></button>
+        </header>
+
+        <!-- Scrollable Main Content -->
+        <main>
+            <div class="goals-list" id="goalsList">
+                <!-- Goal Cards will be populated here by JS -->
+                <div class="goal-card">
+                    <div class="goal-header">
+                        <div class="goal-title">
+                            <i class="fas fa-dumbbell"></i>
+                            <span>Increase Bench Press</span>
+                        </div>
+                        <div class="goal-actions">
+                            <button title="Edit Goal"><i class="fas fa-pencil-alt"></i></button>
+                            <button title="Delete Goal"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>
+                    <div class="goal-progress">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" style="width: 75%;"></div>
+                        </div>
+                        <div class="progress-values">
+                            <span class="current-value">185 lbs</span>
+                            <span class="target-value"> / 225 lbs</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="goal-card">
+                    <div class="goal-header">
+                        <div class="goal-title">
+                            <i class="fas fa-tint"></i>
+                            <span>Drink 3L Water Daily</span>
+                        </div>
+                         <div class="goal-actions">
+                            <button title="Log Progress"><i class="fas fa-plus-circle"></i></button>
+                            <button title="Delete Goal"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>
+                    <div class="goal-progress">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" style="width: 40%;"></div>
+                        </div>
+                        <div class="progress-values">
+                            <span class="current-value">1.2 L</span>
+                            <span class="target-value"> / 3 L</span>
+                        </div>
+                    </div>
+                </div>
+
+                 <div class="goal-card">
+                    <div class="goal-header">
+                        <div class="goal-title">
+                            <i class="fas fa-running"></i>
+                            <span>Run 5km Under 25 Min</span>
+                        </div>
+                         <div class="goal-actions">
+                             <button title="Edit Goal"><i class="fas fa-pencil-alt"></i></button>
+                             <button title="Delete Goal"><i class="fas fa-trash-alt"></i></button>
+                         </div>
+                    </div>
+                    <div class="goal-progress">
+                         <p style="font-size:0.9em; color: var(--light-grey);">Best time: 26:15</p>
+                         <!-- Example without standard progress bar -->
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- Fixed AI Input Area -->
+        <div class="ai-input-container">
+            <button class="icon-button" aria-label="Attach File"><i class="fas fa-paperclip"></i></button>
+            <input type="text" id="ai-goal-input" placeholder="Ask AI to add, update, or remove goals...">
+            <button class="icon-button" aria-label="Send Message"><i class="fas fa-paper-plane"></i></button>
+            <button class="icon-button" aria-label="Use Microphone"><i class="fas fa-microphone"></i></button>
+        </div>
+        <footer class="ai-input-section">
+            <nav class="bottom-nav">
+                <a href="#settings" class="nav-item">
+                  <i class="fas fa-cog"></i>
+                  <span>Settings</span>
+                </a>
+                <a href="./chat bot.html" class="nav-item">
+                  <i class="fas fa-comments"></i>
+                  <span>Chat</span>
+                </a>
+                <a href="./home.html" class="nav-item ">
+                  <!-- Home is initially active -->
+                  <i class="fas fa-home"></i>
+                  <span>Home</span>
+                </a>
+                <a href="./Flow.html" class="nav-item">
+                  <!-- New Flow tab -->
+                  <i class="fas fa-bolt"></i>
+                  <!-- Example icon for Flow -->
+                  <span>Flow</span>
+                </a>
+                <a href="./goals.html" class="nav-item active">
+                  <i class="fas fa-bullseye"></i>
+                  <span>Goals</span>
+                </a>
+              </nav>
+        </footer>
+
+         <!-- Fixed Bottom Navigation Placeholder -->
+         
+    </div>
+
+    <script>
+        
+    </script>
+</body>
+</html> 

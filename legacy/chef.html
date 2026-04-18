@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head> 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chef Chat - Responsive with Icons</title>
+
+    <!-- Google Font -->
+     <link rel="stylesheet" href="./fontawesome-free-6.7.1-web/css/all.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" integrity="sha512-xh6O/CkQoPOWDdYTDqeRdPCVd1SpvCA9XXcUnZS2FmJNp1coAFzvtCN9BmamE+4aHK8yyUHUSCcJHgloTyT2A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <style>
+        /* --- Palettes and Basic Setup --- */
+        :root {
+            --bg-base: #0f0f0f;
+            --bg-container: #242424;
+            --bg-panel: #333333;
+            --bg-user-message: #555555;
+
+            --text-primary: #ffffff;
+            --text-secondary: #f2f2f2;
+            --text-on-accent: #0f0f0f;
+
+            --accent-primary: #f2c464;      /* Bright Yellow */
+            --accent-primary-darker: #e0b04e; /* Darker Yellow */
+            --accent-secondary: #c9bbaa;     /* Warm Beige (Not used prominently here) */
+            --accent-disabled: #444444;      /* Grey for disabled states */
+            --accent-checked: #e0b04e;     /* Checkbox checked color */
+
+            --border-color: #444444;
+            --shadow-color: rgba(0, 0, 0, 0.5);
+            --scrollbar-thumb: #5a5a5a;
+            --scrollbar-track-panel: var(--bg-panel); /* Track matches the panel background */
+             --scrollbar-track-container: var(--bg-container); /* Track matches the container background */
+
+
+            --font-family: 'Poppins', sans-serif;
+
+            /* Approximate Fixed Heights for calculation aids */
+            --header-height: 55px;
+            --input-area-height: 70px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { height: 100%; }
+        body {
+            font-family: var(--font-family);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; /* Use vh for consistency */
+            height: 100vh; /* Explicit height */
+            /* Desktop padding for breathing room */
+            padding: 1rem;
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            line-height: 1.6;
+             /* Prevent body scroll on desktop - container scrolls */
+            overflow: hidden;
+        }
+
+        /* Mobile Body Styles */
+        @media (max-width: 768px) {
+             body {
+                padding: 0; /* Remove padding on mobile */
+                min-height: 100vh;
+                height: 100vh; /* Still 100vh */
+                overflow-y: hidden; /* Container manages scroll */
+             }
+        }
+
+
+        /* --- Main Container --- */
+        .chef-chat-container {
+            /* Desktop defaults */
+            width: 95vw;
+            max-width: 1500px;
+            height: 90vh;
+            max-height: 900px;
+            background-color: var(--bg-container);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 30px var(--shadow-color);
+            border-radius: 12px;
+
+            /* Layout */
+            display: flex;
+            flex-direction: column; /* Header on top, layout wrapper below */
+            overflow: hidden; /* Crucial: Header/Footer fixed, content area scrolls */
+        }
+
+        /* Mobile Container Styles */
+        @media (max-width: 768px) {
+            .chef-chat-container {
+                width: 100%;
+                height: 100vh; /* Fill viewport height */
+                max-width: none;
+                max-height: none;
+                border-radius: 0;
+                border: none;
+                box-shadow: none;
+            }
+        }
+
+        /* --- Header --- */
+        header {
+            display: flex;
+            align-items: center;
+             /* Desktop padding */
+            padding: 12px 25px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-panel);
+            flex-shrink: 0; /* Prevent shrinking */
+            gap: 15px;
+            height: var(--header-height); /* Fixed height */
+            min-height: var(--header-height); /* Prevent shrinking below fixed height */
+        }
+
+        .icon-btn { background: none; border: none; color: var(--text-secondary); font-size: 1.1em; cursor: pointer; padding: 5px; transition: color 0.3s ease; line-height: 1; }
+        .icon-btn:hover:not(:disabled) { color: var(--accent-primary); }
+        .close-btn { font-size: 1.3em; margin-right: 5px; }
+        header .chef-icon { font-size: 1.6em; color: var(--accent-primary); }
+        header h2 { font-size: 1.3em; font-weight: 500; color: var(--text-primary); margin: 0; }
+
+        /* Mobile Header Adjustments */
+         @media (max-width: 600px) {
+            header { padding: 10px 15px; gap: 10px; }
+            header h2 { font-size: 1.1em; }
+         }
+        @media (max-width: 480px) {
+            header h2 { font-size: 1em; }
+        }
+
+
+        /* --- Layout Wrapper for Two Columns (Desktop) / Stacking (Mobile) --- */
+        .layout-wrapper {
+             /* Desktop default: Side-by-side columns */
+            display: flex;
+            flex-direction: row;
+            flex-grow: 1; /* Takes remaining space below header */
+            overflow: hidden; /* Crucial: Children manage their own scroll within this space */
+        }
+
+        /* Mobile layout: Stack Main Content and Sidebar */
+        @media (max-width: 768px) {
+            .layout-wrapper {
+                flex-direction: column; /* Stack them */
+                 /* Layout wrapper now needs height defined by flex-grow: 1 */
+                overflow: hidden; /* Children manage scroll */
+            }
+        }
+
+
+        /* --- Main Content (Chat Area + Input) - Left Column (Desktop) / Bottom Section (Mobile) --- */
+        .main-content {
+             /* Desktop default */
+            flex: 2; /* Takes 2/3rds of space */
+            display: flex;
+            flex-direction: column; /* Stack chat and input */
+            overflow: hidden; /* Children control scroll */
+            border-right: 1px solid var(--border-color); /* Desktop separator */
+             min-width: 300px; /* Prevent collapsing on desktop flex */
+        }
+
+        /* Mobile Main Content Styles (becomes the lower part of the stack) */
+        @media (max-width: 768px) {
+            .main-content {
+                 order: 1; /* Place after the sidebar/recipe-info section */
+                flex-grow: 1; /* ALLOW THIS TO GROW AND TAKE REMAINING SPACE IN layout-wrapper */
+                width: 100%; /* Take full width */
+                border-right: none; /* Remove desktop border */
+                 /* Main content height determined by flex-grow; children manage space within */
+            }
+        }
+
+
+        /* --- Sidebar (Ingredients + Steps) - Right Column (Desktop) / Top Section (Mobile) --- */
+        .sidebar {
+             /* Desktop default */
+            flex: 1; /* Takes 1/3rd of space */
+            display: flex;
+            flex-direction: column; /* Stack ingredient/step panels vertically on DESKTOP */
+            overflow: hidden; /* Children panels will scroll */
+            background-color: var(--bg-panel); /* Distinct BG */
+             min-width: 200px; /* Prevent collapsing on desktop flex */
+        }
+
+         /* Mobile Sidebar Styles (becomes the upper part of the stack - recipe info) */
+        @media (max-width: 768px) {
+            .sidebar {
+                 order: 0; /* Place before the main content */
+                flex-shrink: 0; /* PREVENT shrinking - its height is limited by max-height/content */
+                width: 100%; /* Take full width */
+                max-height: 45vh; /* Limit height to avoid dominating screen */
+                overflow-y: auto; /* Sidebar itself scrolls if contents overflow its max-height */
+                background-color: var(--bg-panel); /* Keep panel background */
+                 /* Mobile layout *within* the sidebar: side-by-side by default */
+                 flex-direction: row;
+            }
+        }
+        /* Very Small Mobile Sidebar: Stack content vertically within sidebar */
+        @media (max-width: 480px) {
+             .sidebar {
+                 flex-direction: column; /* Stack recipe panels vertically */
+                 max-height: 50vh; /* Allow slightly more space */
+             }
+        }
+
+
+        /* --- List Panels within Sidebar --- */
+        .list-panel {
+             /* Base styles applicable to both desktop and mobile row layout */
+             flex: 1; /* Share space equally in parent flex */
+            padding: 20px 25px;
+            overflow-y: auto; /* Enable vertical scrolling */
+            color: var(--text-secondary);
+            height: 100%; /* Allow flex item to fill height in desktop column or mobile row */
+             /* Prevent scrolling scrollbar from pushing content if size is tight */
+             min-width: 0;
+        }
+
+         /* Mobile List Panel Styles */
+        @media (max-width: 768px) {
+             .list-panel {
+                 flex: 1; /* Share space equally when side-by-side in mobile sidebar row */
+                 /* height controlled by parent sidebar max-height */
+                 padding: 15px 20px;
+             }
+        }
+        /* Very Small Mobile List Panel: Stacked */
+         @media (max-width: 480px) {
+             .list-panel {
+                 flex: none; /* Don't flex; height determined by content */
+                 height: auto; /* Auto height within stacked column */
+             }
+         }
+
+
+        /* Borders between panels - Desktop vs Mobile */
+        /* Desktop: Bottom border between ingredients/steps (stacked column in sidebar) */
+        .sidebar > .ingredients-list { border-bottom: 1px solid var(--border-color); border-right: none;} /* Explicitly none for right border */
+        .sidebar > .steps-list { border-bottom: none; border-right: none;}
+
+        /* Mobile (> 480px): Right border between ingredients/steps (side-by-side row in sidebar) */
+         @media (max-width: 768px) {
+             .sidebar > .ingredients-list {
+                 border-bottom: none; /* Remove bottom border */
+                 border-right: 1px solid var(--border-color); /* Add right border */
+             }
+             .sidebar > .steps-list {
+                  border-right: none; /* Ensure no right border on steps */
+                  border-bottom: none;
+             }
+        }
+        /* Mobile (<= 480px): Stacked again in sidebar - switch borders back */
+         @media (max-width: 480px) {
+              .sidebar > .ingredients-list {
+                 border-right: none; /* Remove right border */
+                 border-bottom: 1px solid var(--border-color); /* Add bottom border */
+             }
+              .sidebar > .steps-list { border-bottom: none; border-right: none; }
+         }
+
+
+        /* Recipe Info Text styling */
+        .list-panel h3 { font-size: 1.05em; /* Desktop default */ font-weight: 500; margin-bottom: 15px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+        .list-panel h3 i { color: var(--accent-primary); }
+        .list-panel ul, .list-panel ol {
+             list-style-position: outside; /* Default positioning */
+             padding-left: 1.5em; /* Indent list items slightly */
+             font-size: 0.95em; /* Desktop default */
+             font-weight: 300;
+        }
+        .list-panel ul li, .list-panel ol li { margin-bottom: 10px; line-height: 1.6; }
+
+        /* Placeholders */
+        .list-panel li.placeholder {
+            opacity: 0.6; font-style: italic; color: var(--text-secondary);
+            list-style: none; padding-left: 0 !important; /* Force no list style padding */
+            margin-bottom: 5px; /* Adjust margin */
+            cursor: default; /* No pointer cursor */
+            display: block; /* Ensure full width for text */
+        }
+         .list-panel li.placeholder::before { content: none !important; /* Force remove bullet/number if any */ }
+
+
+        /* Ingredient List Specifics */
+        .list-panel ul { list-style-type: none; padding-left: 0.5em; } /* Override padding slightly for bullets */
+        .list-panel ul li::before { content: '•'; color: var(--accent-primary); display: inline-block; width: 1em; margin-left: -1em; font-weight: bold; }
+        /* Placeholder override handled by li.placeholder */
+
+        /* Steps List Specifics */
+        .list-panel ol { padding-left: 0; list-style: none; } /* Use flex for list item content layout */
+        .steps-list li { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; cursor: pointer; }
+         /* Placeholder handled by li.placeholder */
+
+        .steps-list li:has(.step-checkbox:checked) .step-label { text-decoration: line-through; opacity: 0.6; color: var(--text-secondary); }
+        .step-checkbox { margin-top: 4px; flex-shrink: 0; accent-color: var(--accent-checked); cursor: pointer; width: 16px; height: 16px; }
+        .step-label { flex-grow: 1; font-weight: 300; color: var(--text-primary); }
+
+
+        /* Mobile Adjustments for List Panels */
+        @media (max-width: 600px) {
+             .list-panel h3 { font-size: 0.95em; margin-bottom: 10px; padding-bottom: 8px;}
+             .list-panel ul, .list-panel ol { font-size: 0.88em; }
+             .list-panel ul li, .list-panel ol li { margin-bottom: 8px; }
+             .steps-list li { margin-bottom: 10px; gap: 10px; }
+             .step-checkbox { width: 15px; height: 15px; }
+        }
+        @media (max-width: 480px) {
+             .list-panel h3 { font-size: 0.9em; }
+             .list-panel ul, .list-panel ol { font-size: 0.85em; }
+             /* Adjust ingredient list padding when stacked */
+             .list-panel ul { padding-left: 1.5em; } /* Give standard list padding when stacked */
+             .list-panel ul li::before { margin-left: -1.5em; } /* Adjust bullet position */
+             .list-panel li.placeholder { padding-left: 0 !important;} /* Keep placeholder override */
+        }
+
+
+        /* --- Chat Area --- */
+        .chat-area {
+            flex-grow: 1; /* Takes available space above input *within main-content* */
+            /* Desktop padding */
+            padding: 25px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            background-color: var(--bg-container); /* Container BG */
+             min-height: 0; /* Allows it to shrink within flex parent (main-content) */
+        }
+
+        /* Mobile Chat Area Adjustments */
+         @media (max-width: 768px) {
+             .chat-area {
+                 padding: 20px;
+                 /* min-height is handled by flex-grow on main-content */
+             }
+         }
+        @media (max-width: 600px) {
+             .chat-area { padding: 15px; }
+         }
+
+
+        /* Chat Message Styling */
+        .message {
+            padding: 10px 15px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            display: flex; /* Already a flex container */
+            align-items: flex-start;
+            gap: 8px; /* Spacing between icon and text */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            position: relative;
+            color: var(--text-primary);
+            font-size: 1em; /* Desktop font size */
+            max-width: 75%; /* Desktop max width */
+        }
+
+        /* AI Message (left aligned bubble) */
+        .ai-message {
+             background-color: var(--bg-panel);
+             align-self: flex-start; /* Aligns the bubble to the left */
+             border-bottom-left-radius: 6px;
+             /* default flex-direction: row - icon first (left) */
+             flex-direction: row;
+        }
+
+        /* User Message (right aligned bubble) */
+        .user-message {
+             background-color: var(--bg-user-message);
+             align-self: flex-end; /* Aligns the bubble to the right */
+             border-bottom-right-radius: 6px;
+             /* Reverse flex direction to put icon last (right) */
+             flex-direction: row-reverse;
+        }
+
+
+        /* Common icon styling */
+        .message-icon {
+            font-size: 1.1em;
+            margin-top: 2px; /* Slight top margin to align with text baseline */
+            flex-shrink: 0; /* Prevent icon from shrinking */
+             width: 1.1em; /* Give icon a fixed width to prevent text jumping */
+            text-align: center; /* Center the icon within its space */
+        }
+
+         /* AI specific icon color (matches accent) */
+        .ai-message .message-icon {
+            color: var(--accent-primary); /* Yellow robot icon */
+        }
+
+         /* User specific icon color (white/primary text color) */
+         .user-message .message-icon {
+             color: var(--text-primary); /* White user icon */
+             /* Adjust margin based on flex-direction: row-reverse */
+             margin-left: 8px;
+             margin-right: 0;
+         }
+
+        /* Mobile Message Adjustments */
+         @media (max-width: 600px) {
+            .message { max-width: 85%; font-size: 0.9em;}
+            .message-icon { font-size: 1em; margin-top: 1px; width: 1em;}
+            /* Re-apply specific icon margins based on smaller gap */
+             .ai-message .message-icon { margin-right: 6px; } /* Adjusted for mobile gap */
+             .user-message .message-icon { margin-left: 6px; } /* Adjusted for mobile gap */
+        }
+        @media (max-width: 480px) {
+             /* Further adjust margin for tiny screens if needed */
+             .ai-message .message-icon { margin-right: 5px; }
+             .user-message .message-icon { margin-left: 5px; }
+        }
+
+
+        .message span {
+            flex-grow: 1;
+            /* min-width: 0 needed here to prevent flex item from overflowing its container
+               if it contains a long string without spaces in browsers */
+            min-width: 0;
+        }
+
+
+        /* --- Input Area --- */
+        .input-area {
+             /* Placed inside main-content in HTML */
+            flex-shrink: 0; /* Prevent shrinking */
+            display: flex; gap: 12px; align-items: center;
+             /* Desktop padding */
+            padding: 18px 25px;
+            border-top: 1px solid var(--border-color); background-color: var(--bg-panel);
+            height: var(--input-area-height); /* Fixed height */
+             min-height: var(--input-area-height); /* Prevent shrinking below fixed height */
+        }
+
+         /* Mobile Input Area Adjustments */
+         @media (max-width: 768px) {
+            .input-area { padding: 15px 20px; }
+         }
+         @media (max-width: 600px) {
+            .input-area { padding: 12px 15px; gap: 8px;}
+         }
+
+
+        #user-input {
+            flex-grow: 1;
+            /* Desktop padding */
+            padding: 13px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 22px; background-color: var(--bg-container);
+            color: var(--text-primary); font-size: 1em; outline: none;
+            transition: border-color 0.3s ease;
+        }
+        #user-input:focus { border-color: var(--accent-primary); }
+        #user-input::placeholder { color: var(--text-secondary); font-weight: 300; }
+
+         /* Mobile Input Adjustments */
+        @media (max-width: 600px) {
+             #user-input { padding: 10px 15px; font-size: 0.9em; border-radius: 20px; }
+         }
+
+
+        .send-btn {
+            background-color: var(--accent-primary); color: var(--text-on-accent);
+            border-radius: 50%;
+            /* Desktop size */
+            width: 46px; height: 46px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.2em; transition: background-color 0.3s ease, color 0.3s ease;
+            flex-shrink: 0; border: none; padding: 0; cursor: pointer;
+        }
+        .send-btn:not(:disabled):hover { background-color: var(--accent-primary-darker); color: var(--text-primary); }
+        .send-btn i { margin-left: 1px; line-height: 1; }
+
+        /* Disabled State */
+        .send-btn:disabled { background-color: var(--accent-disabled); color: var(--text-secondary); cursor: default; opacity: 0.7; }
+
+        /* Mobile Send Button Adjustments */
+        @media (max-width: 600px) {
+             .send-btn { width: 40px; height: 40px; font-size: 1em;}
+        }
+
+
+        /* --- Scrollbar Styling (WebKit) --- */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; margin: 5px 0; } /* Default transparent track with margin */
+        ::-webkit-scrollbar-thumb {
+            background-color: var(--scrollbar-thumb); border-radius: 10px;
+            border: 2px solid transparent; /* Border blends into track */
+        }
+        ::-webkit-scrollbar-thumb:hover { background-color: #777; }
+
+        /* Specific area tracks */
+        .list-panel::-webkit-scrollbar-track { background: var(--scrollbar-track-panel); }
+        .chat-area::-webkit-scrollbar-track { background: var(--scrollbar-track-container); }
+
+
+    </style>
+</head>
+<body>
+    <div class="chef-chat-container">
+        <header>
+            <button class="icon-btn close-btn" title="Close"><i class="fas fa-chevron-left"></i></button>
+            <span class="chef-icon"><i class="fas fa-hat-chef"></i></span>
+            <h2>Chef AI</h2>
+        </header>
+
+        <!-- Layout Wrapper handles desktop columns vs mobile stacking -->
+        <div class="layout-wrapper">
+
+            <!-- Main Content Area (Chat + Input) -->
+            <!-- Placed first in HTML, order changed by flexbox on mobile -->
+            <div class="main-content">
+                <section class="chat-area" id="chat-area">
+                    <!-- Initial AI message -->
+                    <!-- Icons added dynamically by JS now -->
+                </section>
+
+                <footer class="input-area">
+                    <input type="text" id="user-input" placeholder="Type your message...">
+                    <button id="send-btn" class="icon-btn send-btn" title="Send" disabled>
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </footer>
+            </div>
+
+            <!-- Sidebar Area (Ingredients + Steps) -->
+            <!-- Placed second in HTML, order changed by flexbox on mobile -->
+            <aside class="sidebar">
+                 <!-- Recipe details panels (stacked vertically on desktop, side-by-side on mobile > 480px, stacked again on mobile <= 480px) -->
+                <div class="ingredients-list list-panel">
+                    <h3><i class="fas fa-carrot"></i> Ingredients</h3>
+                    <ul id="ingredients">
+                        <!-- Populated via JS -->
+                         <!-- Placeholder added by JS init -->
+                    </ul>
+                </div>
+                <div class="steps-list list-panel">
+                    <h3><i class="fas fa-list-check"></i> Steps</h3>
+                    <ol id="steps">
+                         <!-- Populated via JS -->
+                         <!-- Placeholder added by JS init -->
+                    </ol>
+                </div>
+            </aside>
+
+        </div> <!-- End Layout Wrapper -->
+
+    </div> <!-- End Chef Chat Container -->
+
+    <script>
+        // Get references
+        const ingredientsList = document.getElementById('ingredients');
+        const stepsList = document.getElementById('steps');
+        const chatArea = document.getElementById('chat-area');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        // Recipe Data - Using data structure from mobile example
+        const recipes = {
+            pancakes: {
+                ingredients: ['1 cup All-Purpose Flour', '2 tbsp Granulated Sugar', '2 tsp Baking Powder', '1/2 tsp Salt', '1 cup Milk', '1 Large Egg', '2 tbsp Unsalted Butter, melted'],
+                steps: ['Whisk dry ingredients (flour, sugar, baking powder, salt) in a large bowl.', 'In a separate bowl, whisk wet ingredients (milk, egg, melted butter).', 'Pour wet ingredients into dry and whisk until just combined (don\'t overmix).', 'Heat a lightly oiled griddle or pan over medium heat.', 'Pour ~1/4 cup batter per pancake onto the hot griddle.', 'Cook for 2-3 minutes per side, until golden brown and cooked through.']
+            },
+            omelette: {
+                ingredients: ['2-3 Large Eggs', '1 tbsp Milk or Water (optional)', 'Pinch of Salt', 'Pinch of Black Pepper', '1 tsp Butter or Oil', 'Your favorite fillings (e.g., cheese, chopped veggies, ham)'],
+                steps: ['Crack eggs into a bowl. Add milk/water (if using), salt, and pepper. Whisk well.', 'Heat butter/oil in a small non-stick skillet over medium-low heat.', 'Pour the egg mixture into the hot skillet. Let it set for a minute.', 'As the edges set, gently lift them with a spatula and tilt the pan to allow uncooked egg to flow underneath.', 'Once the top is nearly set, sprinkle fillings over one half.', 'Carefully fold the omelette in half using the spatula.', 'Slide onto a plate and serve immediately.']
+            },
+            carbonara: {
+                ingredients: ['200g Spaghetti or Bucatini', '100g Guanciale (or Pancetta/Bacon)', '2 Large Eggs', '1 Large Egg Yolk', '50g Pecorino Romano cheese, grated', 'Black Pepper, freshly cracked'],
+                steps: ['Cook pasta in well-salted boiling water until al dente. Reserve ~1/2 cup pasta water.', 'While pasta cooks, chop guanciale/pancetta and fry in a skillet over medium heat until crisp. Remove meat, leave rendered fat.', 'In a bowl, whisk eggs and egg yolk. Gradually whisk in grated Pecorino cheese and lots of black pepper.', 'Drain pasta and add it directly to the skillet with the rendered fat. Toss quickly.', 'Remove skillet from heat. Quickly pour egg/cheese mixture over pasta, tossing vigorously. Add reserved pasta water a little at a time if needed to create a creamy sauce (avoid scrambling eggs).', 'Stir in the crispy guanciale/pancetta. Serve immediately with more Pecorino and pepper.']
+            }
+        };
+
+        // --- Dynamic List Management ---
+
+        // Helper to remove placeholders when real content comes in
+         function removePlaceholders() {
+            const ingredientsPlaceholder = ingredientsList.querySelector('.placeholder');
+            const stepsPlaceholder = stepsList.querySelector('.placeholder');
+            if (ingredientsPlaceholder) ingredientsPlaceholder.remove();
+            if (stepsPlaceholder) stepsPlaceholder.remove();
+         }
+
+        function clearLists() {
+            // Clear content and add placeholders back
+            ingredientsList.innerHTML = '';
+            stepsList.innerHTML = '';
+            addIngredient('Recipe details appear here...', true);
+            addStep('...and here!', 0, true); // Need a placeholder index for addStep structure
+        }
+
+        function addIngredient(item, isPlaceholder = false) {
+            if (!isPlaceholder && ingredientsList.querySelector('.placeholder')) {
+                 // If adding a real item and placeholders exist, remove them
+                 removePlaceholders();
+             }
+            const li = document.createElement('li');
+            li.textContent = item;
+            if (isPlaceholder) {
+                li.classList.add('placeholder');
+                // Placeholder list item style adjustments done in CSS
+            } else {
+                // Ensure default styles are used for real items if any specific placeholder styles are sticky
+                 li.style.listStyleType = ''; // Reset explicit JS style
+                 li.style.paddingLeft = ''; // Reset explicit JS style
+            }
+            ingredientsList.appendChild(li);
+        }
+
+        function addStep(step, index, isPlaceholder = false) {
+             if (!isPlaceholder && stepsList.querySelector('.placeholder')) {
+                 // If adding a real item and placeholders exist, remove them
+                 removePlaceholders();
+             }
+            const li = document.createElement('li');
+
+            if (isPlaceholder) {
+                li.textContent = step;
+                li.classList.add('placeholder');
+                 // Placeholder list item style adjustments done in CSS
+                 li.style.cursor = 'default'; // Ensure default cursor
+            } else {
+                const checkboxId = `step-checkbox-${index}`;
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = checkboxId;
+                checkbox.value = index;
+                checkbox.className = 'step-checkbox';
+                // Add event listener
+                checkbox.addEventListener('change', handleStepCheck);
+
+                const label = document.createElement('label');
+                label.htmlFor = checkboxId; // Associate label
+                label.textContent = step;
+                label.className = 'step-label';
+
+                li.appendChild(checkbox);
+                li.appendChild(label);
+                li.dataset.stepIndex = index; // Store index
+                li.style.cursor = 'pointer'; // Ensure real steps have pointer cursor
+            }
+            stepsList.appendChild(li);
+        }
+
+        // --- Event Handler for Checkbox Changes ---
+        function handleStepCheck(event) {
+             const checkbox = event.target;
+            const isChecked = checkbox.checked;
+            const listItem = checkbox.closest('li');
+
+             // Don't process clicks on placeholders
+            if (listItem.classList.contains('placeholder')) {
+                 checkbox.checked = !isChecked; // Revert state if somehow clicked
+                 return;
+             }
+
+            const stepLabel = listItem.querySelector('.step-label');
+            const stepText = stepLabel ? stepLabel.textContent.trim() : 'a step'; // Get text, trim whitespace
+            const stepIndex = parseInt(listItem.dataset.stepIndex); // Get the index
+
+            if (isChecked) {
+                // Acknowledge the step
+                const acknowledgment = `Step ${stepIndex + 1} completed: "${stepText.substring(0, 40)}${stepText.length > 40 ? '...' : ''}" Done! 👍`; // Limit length
+                setTimeout(() => addMessage(acknowledgment, 'ai'), 400);
+
+                 // Check if all steps are now completed after a small delay
+                 setTimeout(() => checkAllStepsCompleted(), 600); // Check shortly after acknowledging
+            }
+             // Could add logic here if a step is UNchecked, maybe revert acknowledgement or prompt?
+        }
+
+         // --- Check if all steps are completed ---
+         function checkAllStepsCompleted() {
+            // Only select actual step checkboxes (not placeholder if somehow it got one)
+            const allCheckboxes = stepsList.querySelectorAll('li:not(.placeholder) .step-checkbox');
+
+             // If there are no *real* step checkboxes, this recipe is considered "complete" if its list is loaded.
+             // A common pattern is to only declare completion if there were steps *to* check.
+             if (allCheckboxes.length === 0) {
+                 return; // Nothing to check or nothing loaded yet
+            }
+
+            const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
+
+            if (allChecked) {
+                 console.log("All steps completed!");
+                 // Add a final celebratory message from the AI if it's not already the last message
+                 const lastMessage = chatArea.lastElementChild;
+                 if (!lastMessage || !lastMessage.classList.contains('ai-message') || !lastMessage.textContent.includes("Your masterpiece should be ready!")) {
+                     setTimeout(() => {
+                         addMessage("Fantastic! 🎉 All recipe steps are checked off. Your masterpiece should be ready!", 'ai');
+                     }, 800); // Longer delay for the final message
+                 }
+            }
+         }
+
+        // --- Chat Functionality ---
+        // Modified addMessage to include user icon and adjust DOM order based on sender
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', sender === 'user' ? 'user-message' : 'ai-message');
+
+            // Create and configure icon based on sender
+            const icon = document.createElement('i');
+            icon.classList.add('message-icon'); // Base icon class
+
+            if (sender === 'ai') {
+                icon.classList.add('fas', 'fa-robot'); // AI icon
+            } else { // sender === 'user'
+                icon.classList.add('fas', 'fa-user'); // User icon
+                 // Could use 'fas', 'fa-circle' for a simple dot if preferred
+                 // icon.style.color = 'var(--text-primary)'; // Explicit color if needed, but CSS rules handle this
+            }
+
+            const textSpan = document.createElement('span');
+            textSpan.textContent = text;
+
+            // Append children - flexbox (row/row-reverse) will handle the visual order
+            messageDiv.appendChild(icon);
+            messageDiv.appendChild(textSpan);
+
+            chatArea.appendChild(messageDiv);
+            // Scroll chat to bottom smoothly
+            chatArea.scrollTo({ top: chatArea.scrollHeight, behavior: 'smooth' });
+        }
+
+        // --- Simulate AI Response ---
+        function simulateAIResponse(userMessage) {
+            const lowerCaseMessage = userMessage.toLowerCase();
+            let aiReply = "Sorry, I couldn't find a recipe for that. Try asking for 'pancakes', 'omelette' or 'carbonara'.";
+            let recipeToLoad = null; // Will store the recipe key ('pancakes', 'omelette', etc.)
+            let action = null; // Can be 'update', 'clear', or null for just message
+
+            // Check for specific commands/requests
+            if (lowerCaseMessage.includes('clear') && lowerCaseMessage.includes('recipe')) {
+                aiReply = "Okay, clearing the recipe details.";
+                action = 'clear';
+            } else if (lowerCaseMessage.includes('hello') || lowerCaseMessage.includes('hi')) {
+                aiReply = "Hi there! What delicious dish shall we prepare today?";
+            } else if (lowerCaseMessage.includes('pancake')) {
+                aiReply = "Fluffy pancakes coming right up! Check the recipe details above (on mobile) or on the side (on desktop). Remember to check off the steps as you go!";
+                recipeToLoad = 'pancakes';
+                action = 'update';
+            } else if (lowerCaseMessage.includes('omelette') || lowerCaseMessage.includes('omelet')) {
+                aiReply = "Omelette, an excellent choice! Recipe details updated. Don't forget to check the steps as you go.";
+                recipeToLoad = 'omelette';
+                action = 'update';
+            } else if (lowerCaseMessage.includes('pasta carbonara') || lowerCaseMessage.includes('carbonara') ) {
+                aiReply = "Classic Pasta Carbonara! Follow the steps carefully and check them off. Buon appetito!";
+                recipeToLoad = 'carbonara';
+                action = 'update';
+            } else if (lowerCaseMessage.includes('thank')) {
+                 aiReply = "You're most welcome! Feel free to ask for another recipe or more help!";
+            } else if (lowerCaseMessage.includes('how are you')) {
+                 aiReply = "Running smoothly and ready to cook! How about you?";
+            }
+            // Default aiReply is used if no specific match is found
+
+            // Add the AI's message and then perform the action (update lists, etc.)
+            setTimeout(() => {
+                addMessage(aiReply, 'ai');
+
+                if (action === 'clear') {
+                    clearLists(); // This puts back the placeholders
+                } else if (action === 'update' && recipeToLoad && recipes[recipeToLoad]) {
+                     updateRecipe(recipeToLoad); // Clears lists and adds new recipe
+                 }
+
+                 // After potentially updating lists, check if all (new) steps are completed.
+                 // This timeout gives the DOM a moment to update before checking checkboxes.
+                setTimeout(() => checkAllStepsCompleted(), 50);
+
+            }, 700); // Simulate thinking time
+        }
+
+        // --- Update Recipe Lists ---
+        function updateRecipe(recipeName) {
+            clearLists(); // Clear existing list items AND put placeholders back initially
+
+            const recipe = recipes[recipeName]; // Get recipe data
+
+            if (recipe) {
+                 // removePlaceholders(); // No need to remove explicitly, addIngredient/addStep does it if they see them
+                 recipe.ingredients.forEach(item => addIngredient(item));
+                 // Pass index when adding steps, starting from 0
+                 recipe.steps.forEach((item, index) => addStep(item, index));
+            } else {
+                // If recipeName wasn't in the recipes object, clearLists already showed placeholders
+                 console.error(`Recipe data not found for "${recipeName}"`);
+            }
+             // checkAllStepsCompleted is called after simulateAIResponse handles update/clear actions
+        }
+
+
+        // --- Handle User Input & Send Button ---
+        function handleSendMessage() {
+            // Check if the button is enabled
+            if (sendBtn.disabled) return;
+
+            const messageText = userInput.value.trim();
+            if (messageText !== '') {
+                addMessage(messageText, 'user');
+                userInput.value = ''; // Clear input field
+                 // Disable button immediately after sending to prevent double sends
+                updateSendButtonState(); // Call explicitly after clearing input
+
+                simulateAIResponse(messageText); // Trigger AI response simulation
+            }
+        }
+
+        // --- Send Button Enable/Disable Logic ---
+        function updateSendButtonState() {
+            // Enable button only if input is not empty after trimming whitespace
+             sendBtn.disabled = (userInput.value.trim() === '');
+         }
+
+
+        // --- Event Listeners ---
+        sendBtn.addEventListener('click', handleSendMessage);
+
+        userInput.addEventListener('keypress', (event) => {
+            // Allow sending with Enter key if button is not disabled
+            if (event.key === 'Enter' && !sendBtn.disabled) {
+                handleSendMessage();
+            }
+        });
+
+        // Listener to update send button state as user types
+        userInput.addEventListener('input', updateSendButtonState);
+
+
+        // --- Initial Setup ---
+        // Add the initial AI message
+        addMessage("Hello! I'm Chef AI. Ask me for a recipe like \"pancakes\" or \"omelette\" Check off steps as you complete them!", 'ai');
+         clearLists(); // Initialize with placeholder content for the recipe panels
+        updateSendButtonState(); // Set initial state of the send button (should be disabled)
+
+        console.log("Chef AI Chat Initialized - Responsive with merged styles, icons, and interactive steps.");
+
+    </script>
+
+</body>
+</html>

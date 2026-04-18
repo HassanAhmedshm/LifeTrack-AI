@@ -1,7 +1,8 @@
 import "../global.css";
-import { Slot, useRouter } from "expo-router";
+import { Slot, useRouter, useSegments } from "expo-router";
 import { View, Text } from "react-native";
 import { useEffect, useState } from "react";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { initDB } from "../src/db/index";
 import { useUserStore } from "../src/store/useUserStore";
 import { useGoalStore } from "../src/store/useGoalStore";
@@ -9,6 +10,7 @@ import { useWorkoutStore } from "../src/store/useWorkoutStore";
 
 export default function RootLayout() {
   const router = useRouter();
+  const segments = useSegments();
   const [dbReady, setDbReady] = useState(false);
   const [dbError, setDbError] = useState<string | null>(null);
   const isHydrated = useUserStore((state) => state.isHydrated);
@@ -44,41 +46,60 @@ export default function RootLayout() {
     initializeApp();
   }, []);
 
-  useEffect(() => {
-    if (isHydrated) {
-      if (!onboardingCompleted) {
-        // Route to onboarding if not completed
-        router.replace("/onboarding");
-      } else {
-        // Route to tabs if onboarding is completed
-        router.replace("/(tabs)");
-      }
-    }
-  }, [isHydrated, onboardingCompleted, router]);
-
   if (dbError) {
     return (
-      <View className="flex-1 items-center justify-center bg-dark px-6">
-        <Text className="text-xl font-bold text-red-500">Error</Text>
-        <Text className="mt-4 text-center text-white">
-          Failed to initialize app.
-        </Text>
-        <Text className="mt-2 text-center text-sm text-white/60">{dbError}</Text>
-      </View>
+      <SafeAreaProvider>
+        <SafeAreaView className="flex-1 bg-dark" edges={["top"]}>
+          <View className="flex-1 items-center justify-center bg-dark px-6">
+            <Text className="text-xl font-bold text-red-500">Error</Text>
+            <Text className="mt-4 text-center text-white">
+              Failed to initialize app.
+            </Text>
+            <Text className="mt-2 text-center text-sm text-white/60">{dbError}</Text>
+          </View>
+        </SafeAreaView>
+      </SafeAreaProvider>
     );
   }
 
   const isReady = dbReady && isHydrated && goalsHydrated && workoutsHydrated;
 
+  useEffect(() => {
+    if (!isReady) {
+      return;
+    }
+
+    const firstSegment = segments[0];
+    const inOnboarding = firstSegment === "onboarding";
+    const inTabs = firstSegment === "(tabs)";
+    const inAllowedStandalone =
+      firstSegment === "workout" ||
+      firstSegment === "chef" ||
+      firstSegment === "settings";
+
+    if (!onboardingCompleted && !inOnboarding) {
+      router.replace("/onboarding");
+      return;
+    }
+
+    if (onboardingCompleted && !inTabs && !inAllowedStandalone) {
+      router.replace("/(tabs)");
+    }
+  }, [isReady, onboardingCompleted, segments, router]);
+
   return (
-    <View className="flex-1 bg-dark">
-      {!isReady ? (
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-white text-lg">Initializing...</Text>
+    <SafeAreaProvider>
+      <SafeAreaView className="flex-1 bg-dark" edges={["top"]}>
+        <View className="flex-1 bg-dark">
+          {!isReady ? (
+            <View className="flex-1 items-center justify-center">
+              <Text className="text-white text-lg">Initializing...</Text>
+            </View>
+          ) : (
+            <Slot />
+          )}
         </View>
-      ) : (
-        <Slot />
-      )}
-    </View>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }

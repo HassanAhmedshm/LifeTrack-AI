@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head> 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workout Session - AI Enhanced (Set Carousel)</title>
+    <link rel="stylesheet" href="./fontawesome-free-6.7.1-web/css/all.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --black: #0f0f0f;
+            --dark-grey: #2a2a2a;
+            --medium-grey: #3d3d3d;
+            --light-grey-text: #bdbdbd;
+            --yellow: #f2c464;
+            --white: #ffffff;
+            --danger-color: #e57373;
+            --yellow-hover: #f5d081;
+            --yellow-translucent: rgba(242, 196, 100, 0.15);
+            --yellow-focus-shadow: rgba(242, 196, 100, 0.4);
+            --tooltip-bg: #4a4a4a;
+            --header-image-height: 200px;
+            --header-fade-height: 80px;
+            --mobile-max-width: 480px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { font-family: "Manrope", sans-serif; background-color: var(--black); color: var(--white); scrollbar-gutter: stable both-edges; font-size: 16px; }
+        body { min-height: 100vh; display: flex; flex-direction: column; background-color: var(--black); max-width: var(--mobile-max-width); margin: 0 auto; overflow-x: hidden; position: relative; }
+        .workout-screen { display: flex; flex-direction: column; flex-grow: 1; width: 100%; }
+        .workout-header { height: var(--header-image-height); width: 100%; position: relative; background-size: cover; background-position: center center; background-repeat: no-repeat; background-color: var(--dark-grey); display: flex; flex-direction: column; justify-content: flex-end; padding: 15px; transition: background-image 0.8s ease-in-out, background-color 0.3s; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5); flex-shrink: 0; }
+        .workout-header.slideshow-active {}
+        .workout-header::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: var(--header-fade-height); background: linear-gradient(to bottom, transparent, rgba(15, 15, 15, 0.8) 60%, var(--black) 98%); pointer-events: none; z-index: 1; }
+        .header-text { position: relative; z-index: 2; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7); }
+        #workout-title { font-size: 1.8em; font-weight: 700; color: var(--white); margin-bottom: 2px; }
+        #workout-date { font-size: 0.9em; color: var(--light-grey-text); margin-bottom: 8px; }
+        #current-focus-text { font-size: 1.0em; font-weight: 500; color: var(--yellow); min-height: 1.2em; line-height: 1.4; transition: color 0.3s ease; }
+        .exercise-list { padding: 15px; flex-grow: 1; overflow-y: auto; }
+        .exercise-card { background-color: var(--dark-grey); border-radius: 10px; margin-bottom: 15px; overflow: hidden; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); transition: border-color 0.3s ease-in-out; border: 1px solid var(--medium-grey); }
+        .exercise-card.is-expanded { border-color: var(--yellow); }
+        .card-collapsed { display: flex; align-items: center; padding: 12px 15px; cursor: pointer; transition: background-color 0.2s ease; position: relative; }
+        .card-collapsed:hover { background-color: rgba(255, 255, 255, 0.05); }
+        .collapsed-img { width: 45px; height: 45px; border-radius: 6px; margin-right: 15px; object-fit: cover; flex-shrink: 0; background-color: var(--black); border: 1px solid var(--medium-grey); }
+        .collapsed-name { font-size: 1.1em; font-weight: 500; flex-grow: 1; margin-right: 40px; color: var(--white); }
+        .collapsed-summary { font-size: 0.9em; color: var(--light-grey-text); white-space: nowrap; margin-right: 10px; }
+        .remove-exercise-btn { position: absolute; top: 50%; right: 5px; transform: translateY(-50%); background: none; border: none; color: var(--light-grey-text); font-size: 1.6em; font-weight: bold; line-height: 1; cursor: pointer; opacity: 0.6; transition: opacity 0.2s, color 0.2s; z-index: 3; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; padding: 5px; }
+        .remove-exercise-btn:hover { color: var(--danger-color); opacity: 1; }
+        .card-expanded { display: none; flex-direction: column; overflow: hidden; border-top: 1px solid var(--medium-grey); }
+        .exercise-card.is-expanded .card-expanded { display: flex; animation: expandCard 0.4s ease-out forwards; }
+        @keyframes expandCard { from { max-height: 0; opacity: 0; } to { max-height: 2000px; opacity: 1; } }
+        .expanded-media { padding: 20px 15px 10px 15px; display: flex; flex-direction: column; align-items: center; }
+        .media-container { width: 90%; max-width: 380px; aspect-ratio: 16 / 9; background-color: var(--black); border-radius: 8px; margin-bottom: 10px; overflow: hidden; position: relative; border: 1px solid var(--medium-grey); }
+        .media-container video, .media-container img { display: block; width: 100%; height: 100%; object-fit: cover; }
+        .media-container video { display: none; }
+        .media-container.showing-video video { display: block; }
+        .media-container.showing-video img { display: none; }
+        .media-container.showing-image video { display: none; }
+        .media-container.showing-image img { display: block; }
+        .media-toggles { display: flex; gap: 10px; margin-bottom: 15px; }
+        .media-toggle-btn { padding: 5px 10px; font-size: 0.8em; font-weight: 500; color: var(--light-grey-text); background-color: var(--medium-grey); border: 1px solid var(--medium-grey); border-radius: 4px; cursor: pointer; transition: all 0.2s ease; }
+        .media-toggle-btn:hover { background-color: #4f4f4f; color: var(--white); }
+        .media-toggle-btn.active { background-color: var(--yellow); color: var(--black); font-weight: 600; border-color: var(--yellow); }
+        .expanded-primary-label { font-size: 1.3em; font-weight: 600; color: var(--yellow); margin-bottom: 5px; text-align: center; }
+        .expanded-muscles { font-size: 0.95em; color: var(--light-grey-text); text-align: center; line-height: 1.3; margin-bottom: 10px; }
+        .expanded-details { padding: 15px 15px 20px 15px; border-top: 1px solid var(--medium-grey); }
+        .sets-target-info { font-size: 1em; font-weight: 500; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed var(--medium-grey); color: var(--white); display: flex; justify-content: space-between; align-items: center; }
+        .set-navigation { display: flex; justify-content: space-between; /* Show both buttons */ margin-bottom: 15px; }
+        .set-nav-btn { background-color: var(--medium-grey); border: none; color: var(--yellow); padding: 8px 12px; border-radius: 5px; font-size: 0.9em; cursor: pointer; transition: background-color 0.2s ease, opacity 0.2s; min-width: 80px; text-align: center; }
+        .set-nav-btn:hover:not(:disabled) { background-color: #4f4f4f; }
+        .set-nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        /* Set Visibility Control - Carousel */
+        .sets-container .exercise-set {
+            display: none;
+            margin-bottom: 18px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--medium-grey);
+            flex-direction: column;
+            gap: 8px;
+            animation: fadeInSet 0.3s ease-in-out;
+        }
+         .sets-container .exercise-set:last-child { /* Keep styling consistent */
+             border-bottom: none;
+             margin-bottom: 0;
+             padding-bottom: 0;
+         }
+        .sets-container .exercise-set.active-set {
+            display: flex; /* Only show the active set */
+        }
+        @keyframes fadeInSet { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .exercise-set.set-is-complete { opacity: 0.7; }
+        .set-header { display: flex; justify-content: space-between; align-items: center; }
+        .set-label { font-weight: 600; color: var(--yellow); font-size: 1.1em; }
+        .set-targets { font-size: 0.9em; color: var(--light-grey-text); margin-top: 2px; }
+        .set-main-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .set-inputs-group { display: flex; gap: 10px; flex-grow: 1; flex-wrap: wrap; }
+        .set-complete-wrapper { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 5px; min-width: 60px; justify-content: center; margin-left: auto; }
+        .set-inputs-group label { display: flex; align-items: center; gap: 5px; font-size: 0.85em; color: var(--light-grey-text); }
+        .set-inputs-group input[type="number"], .set-inputs-group input[type="text"] { padding: 8px 10px; background-color: var(--medium-grey); border: 1px solid #555; color: var(--white); border-radius: 4px; font-size: 0.95em; width: 65px; transition: border-color 0.2s, box-shadow 0.2s; }
+        .set-inputs-group input.input-notes { width: auto; flex-grow: 1; min-width: 100px; }
+        .set-inputs-group input.input-reps-l, .set-inputs-group input.input-reps-r { width: 55px; }
+        .set-inputs-group input::placeholder { color: var(--light-grey-text); opacity: 0.7; }
+        .set-inputs-group input:focus { outline: none; border-color: var(--yellow); box-shadow: 0 0 5px var(--yellow-focus-shadow); }
+        .set-complete-wrapper input[type="checkbox"] { transform: scale(1.4); accent-color: var(--yellow); cursor: pointer; margin: 0; }
+        .set-complete-wrapper span { font-size: 0.9em; color: var(--light-grey-text); font-weight: 500; user-select: none; transition: color 0.2s; }
+        .set-complete-wrapper input[type="checkbox"]:checked + span { color: var(--yellow); }
+        .set-info { font-size: 0.85em; color: var(--light-grey-text); display: flex; gap: 15px; flex-wrap: wrap; margin-top: 5px; }
+        .info-item { display: flex; align-items: center; gap: 4px; }
+        .help-icon { color: var(--yellow); cursor: pointer; font-size: 0.9em; transition: color 0.2s; font-weight: bold; }
+        .help-icon:hover { color: var(--yellow-hover); }
+        .add-exercise-button { display: block; width: calc(100% - 30px); margin: 20px auto 10px auto; padding: 12px 15px; font-size: 1em; font-weight: 500; color: var(--yellow); background-color: var(--dark-grey); border: 1px dashed var(--yellow); border-radius: 8px; cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease; text-align: center; min-height: 44px; }
+        .add-exercise-button:hover { background-color: var(--medium-grey); color: var(--yellow-hover); }
+        .ai-chat-area { position: sticky; bottom: 0; left: 0; width: 100%; max-width: var(--mobile-max-width); margin: 0 auto; background-color: var(--black); padding: 10px 15px; box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.5); border-top: 1px solid var(--medium-grey); flex-shrink: 0; z-index: 10; }
+        .ai-input-container { display: flex; align-items: center; gap: 10px; }
+        #ai-input { flex-grow: 1; padding: 10px 15px; font-size: 1em; color: var(--white); background-color: var(--medium-grey); border: 1px solid #555; border-radius: 20px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; min-height: 44px; }
+        #ai-input::placeholder { color: var(--light-grey-text); opacity: 0.8; }
+        #ai-input:focus { border-color: var(--yellow); box-shadow: 0 0 8px var(--yellow-focus-shadow); }
+        .icon-button { background: none; border: none; outline: none; color: var(--yellow); font-size: 1.4rem; cursor: pointer; transition: color 0.3s ease, transform 0.1s ease; display: flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 0; }
+        .icon-button:active { color: var(--yellow-hover); transform: scale(0.95); }
+        .ai-status-display { font-size: 0.85em; color: var(--light-grey-text); text-align: center; margin-top: 8px; height: 1.4em; line-height: 1.4em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: opacity 0.3s ease; opacity: 0; }
+        .ai-status-display.status-info { color: var(--light-grey-text); }
+        .ai-status-display.status-success { color: var(--yellow); font-weight: 500; }
+        .ai-status-display.status-error { color: var(--danger-color); font-weight: 500; }
+        .ai-status-display.status-loading { color: var(--light-grey-text); font-style: italic; }
+        .ai-status-display.visible { opacity: 1; }
+        @keyframes highlight-set-update { from { background-color: var(--yellow-translucent); } to { background-color: transparent; } }
+        .set-field-updated { animation: highlight-set-update 0.7s ease-out; }
+        input[type=number] { -moz-appearance: textfield; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        @media (max-width: 400px) {
+             .set-inputs-group input[type="number"] { width: 55px; }
+             .set-inputs-group input.input-reps-l, .set-inputs-group input.input-reps-r { width: 45px; }
+             #workout-title { font-size: 1.6em; }
+             .set-label { font-size: 1em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="workout-screen">
+        <header class="workout-header" id="workoutHeader">
+            <div class="header-text">
+                <h1 id="workout-title">Default Workout</h1>
+                <p id="workout-date">October 26, 2023</p>
+                <p id="current-focus-text">Focusing On: Select an exercise</p>
+            </div>
+        </header>
+        <main class="exercise-list" id="exerciseList">
+            <article class="exercise-card" id="squats-card" data-exercise-id="ex1" data-exercise-name="Barbell Squats" data-muscles="Quads, Glutes, Hamstrings, Core" data-img-src="https://images.pexels.com/photos/1552252/pexels-photo-1552252.jpeg?auto=compress&cs=tinysrgb&w=400" data-video-src="./assets/squat_demo.mp4" data-summary="4x8-10">
+                <div class="card-collapsed">
+                    <img class="collapsed-img" src="https://images.pexels.com/photos/1552252/pexels-photo-1552252.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" alt="Squats thumbnail">
+                    <span class="collapsed-name">Barbell Squats</span>
+                    <span class="collapsed-summary">4x8-10</span>
+                    <button class="remove-exercise-btn" title="Remove Exercise">×</button>
+                </div>
+                <div class="card-expanded">
+                    <div class="expanded-media">
+                        <div class="media-container showing-image">
+                            <img src="https://images.pexels.com/photos/791763/pexels-photo-791763.jpeg?auto=compress&cs=tinysrgb&w=400&h=225&fit=crop" alt="Barbell Squats Demonstration">
+                            <video preload="metadata" controls poster="https://images.pexels.com/photos/791763/pexels-photo-791763.jpeg?auto=compress&cs=tinysrgb&w=400&h=225&fit=crop">
+                                 <source src="./assets/squat_demo.mp4" type="video/mp4"> Your browser does not support the video tag. </video>
+                        </div>
+                         <div class="media-toggles">
+                            <button class="media-toggle-btn active" data-media-type="image">Show Image</button>
+                            <button class="media-toggle-btn" data-media-type="video">Show Video</button>
+                         </div>
+                        <h3 class="expanded-primary-label">Legs</h3>
+                        <p class="expanded-muscles">Quads, Glutes, Hamstrings, Core</p>
+                    </div>
+                    <div class="expanded-details">
+                        <p class="sets-target-info">Target: 4 Sets of 8-10 Reps</p>
+                         <div class="set-navigation">
+                             <button class="set-nav-btn prev-set-btn"><i class="fas fa-chevron-left"></i> Prev</button>
+                             <button class="set-nav-btn next-set-btn">Next <i class="fas fa-chevron-right"></i></button>
+                         </div>
+                         <div class="sets-container">
+                            <div class="exercise-set" data-set-number="1">
+                                <div class="set-header"><span class="set-label">Set 1</span></div>
+                                <p class="set-targets">Target: 10 Reps @ 185 lbs</p>
+                                <div class="set-main-row">
+                                    <div class="set-inputs-group">
+                                        <label>Wt:<input type="number" class="input-weight" placeholder="185"></label>
+                                        <label>Reps:<input type="number" class="input-reps" placeholder="10"></label>
+                                        <label>Notes:<input type="text" class="input-notes" placeholder="Warm-up felt good"></label>
+                                    </div>
+                                     <label class="set-complete-wrapper"><input type="checkbox" class="set-complete-checkbox"><span>Done</span></label>
+                                </div>
+                                <div class="set-info"> <span class="info-item">Tempo: 3-1-1-0 <i class="fas fa-question-circle help-icon" data-help="tempo"></i></span> <span class="info-item">RPE: 7 <i class="fas fa-question-circle help-icon" data-help="rpe"></i></span> </div>
+                            </div>
+                            <div class="exercise-set" data-set-number="2">
+                                <div class="set-header"><span class="set-label">Set 2</span></div>
+                                <p class="set-targets">Target: 9 Reps @ 195 lbs</p>
+                                <div class="set-main-row">
+                                     <div class="set-inputs-group">
+                                        <label>Wt:<input type="number" class="input-weight" placeholder="195"></label>
+                                        <label>Reps:<input type="number" class="input-reps" placeholder="9"></label>
+                                        <label>Notes:<input type="text" class="input-notes" placeholder="Felt heavier"></label>
+                                    </div>
+                                    <label class="set-complete-wrapper"><input type="checkbox" class="set-complete-checkbox"><span>Done</span></label>
+                                </div>
+                                <div class="set-info"> <span class="info-item">Tempo: 3-1-1-0 <i class="fas fa-question-circle help-icon" data-help="tempo"></i></span> <span class="info-item">RPE: 8 <i class="fas fa-question-circle help-icon" data-help="rpe"></i></span> </div>
+                            </div>
+                            <div class="exercise-set" data-set-number="3">
+                                <div class="set-header"><span class="set-label">Set 3</span></div>
+                                <p class="set-targets">Target: 8 Reps @ 205 lbs</p>
+                                <div class="set-main-row">
+                                    <div class="set-inputs-group">
+                                        <label>Wt:<input type="number" class="input-weight" placeholder="205"></label>
+                                        <label>Reps:<input type="number" class="input-reps" placeholder="8"></label>
+                                        <label>Notes:<input type="text" class="input-notes" placeholder="Tough rep 8"></label>
+                                    </div>
+                                    <label class="set-complete-wrapper"><input type="checkbox" class="set-complete-checkbox"><span>Done</span></label>
+                                </div>
+                                <div class="set-info"> <span class="info-item">Tempo: 2-1-1-0 <i class="fas fa-question-circle help-icon" data-help="tempo"></i></span> <span class="info-item">RPE: 8.5 <i class="fas fa-question-circle help-icon" data-help="rpe"></i></span> </div>
+                            </div>
+                             <div class="exercise-set" data-set-number="4">
+                                <div class="set-header"><span class="set-label">Set 4</span></div>
+                                <p class="set-targets">Target: 8 Reps @ 205 lbs</p>
+                                <div class="set-main-row">
+                                    <div class="set-inputs-group">
+                                        <label>Wt:<input type="number" class="input-weight" placeholder="205"></label>
+                                        <label>Reps:<input type="number" class="input-reps" placeholder="8"></label>
+                                        <label>Notes:<input type="text" class="input-notes" placeholder="Form held up"></label>
+                                    </div>
+                                     <label class="set-complete-wrapper"><input type="checkbox" class="set-complete-checkbox"><span>Done</span></label>
+                                </div>
+                                <div class="set-info"> <span class="info-item">Tempo: 2-1-1-0 <i class="fas fa-question-circle help-icon" data-help="tempo"></i></span> <span class="info-item">RPE: 9 <i class="fas fa-question-circle help-icon" data-help="rpe"></i></span> </div>
+                             </div>
+                         </div>
+                    </div>
+                </div>
+            </article>
+            <article class="exercise-card" id="lunges-card" data-exercise-id="ex2" data-exercise-name="Dumbbell Lunges" data-muscles="Quads, Glutes, Hamstrings, Adductors" data-img-src="https://images.pexels.com/photos/669576/pexels-photo-669576.jpeg?auto=compress&cs=tinysrgb&w=400" data-video-src="" data-summary="3x12 (each leg)">
+                <div class="card-collapsed">
+                    <img class="collapsed-img" src="https://images.pexels.com/photos/669576/pexels-photo-669576.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" alt="Lunges thumbnail">
+                    <span class="collapsed-name">Dumbbell Lunges</span>
+                    <span class="collapsed-summary">3x12 ea.</span>
+                    <button class="remove-exercise-btn" title="Remove Exercise">×</button>
+                </div>
+                 <div class="card-expanded">
+                      <div class="expanded-media">
+                        <div class="media-container showing-image">
+                            <img src="https://images.pexels.com/photos/3837781/pexels-photo-3837781.jpeg?auto=compress&cs=tinysrgb&w=400&h=225&fit=crop" alt="Lunges Demonstration">
+                            <video preload="metadata" controls poster="https://images.pexels.com/photos/3837781/pexels-photo-3837781.jpeg?auto=compress&cs=tinysrgb&w=400&h=225&fit=crop"> <p>Video not available.</p> </video>
+                        </div>
+                         <div class="media-toggles"> <button class="media-toggle-btn active" data-media-type="image">Show Image</button> <button class="media-toggle-btn" data-media-type="video" disabled>Show Video</button> </div>
+                         <h3 class="expanded-primary-label">Legs</h3> <p class="expanded-muscles">Quads, Glutes, Hamstrings, Adductors</p>
+                     </div>
+                     <div class="expanded-details">
+                         <p class="sets-target-info">Target: 3 Sets of 12 Reps (each leg)</p>
+                          <div class="set-navigation">
+                              <button class="set-nav-btn prev-set-btn"><i class="fas fa-chevron-left"></i> Prev</button>
+                              <button class="set-nav-btn next-set-btn">Next <i class="fas fa-chevron-right"></i></button>
+                          </div>
+                         <div class="sets-container">
+                             <div class="exercise-set" data-set-number="1">
+                                <div class="set-header"><span class="set-label">Set 1</span></div>
+                                <p class="set-targets">Target: 12 Reps @ 25 lbs</p>
+                                <div class="set-main-row"> <div class="set-inputs-group"> <label>Wt:<input type="number" class="input-weight" placeholder="25"></label> <label>L:<input type="number" class="input-reps-l" placeholder="12"></label> <label>R:<input type="number" class="input-reps-r" placeholder="12"></label> </div> <label class="set-complete-wrapper"><input type="checkbox" class="set-complete-checkbox"><span>Done</span></label> </div>
+                                <div class="set-info"></div>
+                             </div>
+                             <div class="exercise-set" data-set-number="2">
+                                <div class="set-header"><span class="set-label">Set 2</span></div>
+                                <p class="set-targets">Target: 12 Reps @ 25 lbs</p>
+                                <div class="set-main-row"> <div class="set-inputs-group"> <label>Wt:<input type="number" class="input-weight" placeholder="25"></label> <label>L:<input type="number" class="input-reps-l" placeholder="12"></label> <label>R:<input type="number" class="input-reps-r" placeholder="12"></label> </div> <label class="set-complete-wrapper"><input type="checkbox" class="set-complete-checkbox"><span>Done</span></label> </div>
+                                <div class="set-info"></div>
+                            </div>
+                             <div class="exercise-set" data-set-number="3">
+                                <div class="set-header"><span class="set-label">Set 3</span></div>
+                                <p class="set-targets">Target: 12 Reps @ 25 lbs</p>
+                                <div class="set-main-row"> <div class="set-inputs-group"> <label>Wt:<input type="number" class="input-weight" placeholder="25"></label> <label>L:<input type="number" class="input-reps-l" placeholder="12"></label> <label>R:<input type="number" class="input-reps-r" placeholder="12"></label> </div> <label class="set-complete-wrapper"><input type="checkbox" class="set-complete-checkbox"><span>Done</span></label> </div>
+                                <div class="set-info"></div>
+                            </div>
+                         </div>
+                    </div>
+                 </div>
+            </article>
+            <button id="add-exercise-manual-btn" class="add-exercise-button"> <i class="fas fa-plus"></i> Add Exercise Manually </button>
+        </main>
+        <footer class="ai-chat-area">
+            <div class="ai-input-container"> <input type="text" id="ai-input" placeholder="Ask AI to modify workout..."> <button id="ai-send-btn" class="icon-button" aria-label="Send message to AI"> <i class="fas fa-paper-plane"></i> </button> </div>
+            <div id="ai-status" class="ai-status-display"></div>
+        </footer>
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const exerciseList = document.getElementById('exerciseList');
+        const workoutHeader = document.getElementById('workoutHeader');
+        const currentFocusText = document.getElementById('current-focus-text');
+        const addExerciseManualBtn = document.getElementById('add-exercise-manual-btn');
+        const aiStatus = document.getElementById('ai-status');
+        const defaultFocusText = "Focusing On: Select an exercise";
+        const slideshowImages = [ 'https://images.pexels.com/photos/841130/pexels-photo-841130.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', 'https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', 'https://images.pexels.com/photos/4164844/pexels-photo-4164844.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', 'https://images.pexels.com/photos/2294361/pexels-photo-2294361.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', 'https://images.pexels.com/photos/3757374/pexels-photo-3757374.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' ];
+        let slideshowInterval = null; let currentImageIndex = 0; const defaultHeaderStyle = workoutHeader.style.backgroundColor || 'var(--dark-grey)'; let nextExerciseIdCounter = 6; let activeCard = null;
+
+        function startSlideshow() { stopSlideshow(); if (slideshowImages.length === 0) return; workoutHeader.classList.add('slideshow-active'); workoutHeader.style.backgroundImage = `url('${slideshowImages[currentImageIndex]}')`; workoutHeader.style.backgroundColor = ''; slideshowInterval = setInterval(() => { currentImageIndex = (currentImageIndex + 1) % slideshowImages.length; const nextImage = new Image(); nextImage.src = slideshowImages[currentImageIndex]; nextImage.onload = () => { if (workoutHeader.classList.contains('slideshow-active')) { workoutHeader.style.backgroundImage = `url('${slideshowImages[currentImageIndex]}')`; } }; }, 5000); }
+        function stopSlideshow() { if (slideshowInterval) { clearInterval(slideshowInterval); slideshowInterval = null; workoutHeader.classList.remove('slideshow-active'); } }
+        function generateUniqueExerciseId() { return `ex${nextExerciseIdCounter++}`; }
+        function findExerciseCardById(id) { return exerciseList.querySelector(`.exercise-card[data-exercise-id='${id}']`); }
+        function findExerciseCardByName(name) { if (!name) return null; const cards = exerciseList.querySelectorAll('.exercise-card'); const searchTerm = name.trim().toLowerCase(); for (const card of cards) { const cardName = card.dataset.exerciseName?.trim().toLowerCase(); if (cardName === searchTerm) return card; } for (const card of cards) { const cardName = card.dataset.exerciseName?.trim().toLowerCase(); if (cardName?.includes(searchTerm)) { console.warn(`Partial match used for "${name}": found ${card.dataset.exerciseName}`); return card; } } return null; }
+        function findExerciseCardByOrdinal(ordinal) { const cards = exerciseList.querySelectorAll('.exercise-card:not(.removing)'); const lowerOrdinal = ordinal?.toLowerCase(); if (lowerOrdinal === 'first' && cards.length > 0) return cards[0]; if (lowerOrdinal === 'last' && cards.length > 0) return cards[cards.length - 1]; return null; }
+        function getTargetExerciseCard(payload) { if (payload.targetId) return findExerciseCardById(payload.targetId); if (payload.targetName) return findExerciseCardByName(payload.targetName); if (payload.targetOrdinal) return findExerciseCardByOrdinal(payload.targetOrdinal); console.warn("Could not determine target exercise from payload:", payload); return null; }
+        function resetHeader() { currentFocusText.textContent = defaultFocusText; stopSlideshow(); startSlideshow(); activeCard = null; }
+        function updateHeader(cardElement) { if (!cardElement) { resetHeader(); return; } const exerciseName = cardElement.dataset.exerciseName || 'Exercise'; const exerciseMuscles = cardElement.dataset.muscles || 'Details unavailable'; const exerciseImgSrc = cardElement.dataset.imgSrc || ''; currentFocusText.textContent = `Focusing On: ${exerciseName} (${exerciseMuscles})`; stopSlideshow(); if (exerciseImgSrc) { workoutHeader.style.backgroundImage = `url('${exerciseImgSrc}')`; workoutHeader.style.backgroundColor = ''; } else { workoutHeader.style.backgroundImage = 'none'; workoutHeader.style.backgroundColor = defaultHeaderStyle; } activeCard = cardElement; }
+
+        function initializeActiveSet(cardElement) {
+            const sets = cardElement.querySelectorAll('.exercise-set');
+            if (!sets || sets.length === 0) return;
+            sets.forEach((set, index) => {
+                set.classList.toggle('active-set', index === 0); // Activate first set
+            });
+            updateSetNavigation(cardElement); // Update nav buttons based on initial state
+        }
+
+        function updateExpandedContent(cardElement) {
+             if (!cardElement || !cardElement.classList.contains('is-expanded')) return;
+             const expandedContent = cardElement.querySelector('.card-expanded');
+             if (!expandedContent) return;
+             const mediaContainer = expandedContent.querySelector('.media-container');
+             const videoBtn = expandedContent.querySelector('.media-toggle-btn[data-media-type="video"]');
+             const videoEl = mediaContainer?.querySelector('video');
+             const hasVideoSource = videoEl?.querySelector('source')?.getAttribute('src');
+             if (videoBtn) { videoBtn.disabled = !hasVideoSource; }
+             initializeActiveSet(cardElement); // Ensures first set is active on expand/update
+        }
+
+        function toggleMediaView(cardElement, targetType) { const expandedContent = cardElement.querySelector('.card-expanded'); if (!expandedContent) return; const mediaContainer = expandedContent.querySelector('.media-container'); const videoEl = mediaContainer?.querySelector('video'); const imgBtn = expandedContent.querySelector('.media-toggle-btn[data-media-type="image"]'); const videoBtn = expandedContent.querySelector('.media-toggle-btn[data-media-type="video"]'); if (!mediaContainer || !imgBtn || !videoBtn) return; if (targetType === 'video' && !videoBtn.disabled) { mediaContainer.classList.remove('showing-image'); mediaContainer.classList.add('showing-video'); imgBtn.classList.remove('active'); videoBtn.classList.add('active'); if (videoEl) videoEl.play().catch(e => console.log("Autoplay prevented:", e)); } else if (targetType === 'image') { mediaContainer.classList.remove('showing-video'); mediaContainer.classList.add('showing-image'); imgBtn.classList.add('active'); videoBtn.classList.remove('active'); if (videoEl) videoEl.pause(); } }
+
+        function getCurrentSetIndex(cardElement) {
+            const sets = cardElement.querySelectorAll('.exercise-set');
+            const activeSet = cardElement.querySelector('.exercise-set.active-set');
+            if (!activeSet) return 0; // Default to first if none are active
+            return Array.from(sets).indexOf(activeSet);
+        }
+
+        function changeActiveSet(cardElement, direction) {
+            const sets = cardElement.querySelectorAll('.exercise-set');
+            if (sets.length <= 1) return; // No navigation needed
+
+            const currentIndex = getCurrentSetIndex(cardElement);
+            const totalSets = sets.length;
+            let nextIndex;
+
+            if (direction === 'next') {
+                nextIndex = (currentIndex + 1) % totalSets; // Loop forward
+            } else { // direction === 'prev'
+                nextIndex = (currentIndex - 1 + totalSets) % totalSets; // Loop backward
+            }
+
+            sets[currentIndex]?.classList.remove('active-set'); // Use optional chaining
+            sets[nextIndex]?.classList.add('active-set'); // Use optional chaining
+
+            // Maybe slight visual cue for change if needed (e.g. focus first input)
+            const firstInput = sets[nextIndex]?.querySelector('input');
+            // firstInput?.focus({ preventScroll: true }); // Might be too jumpy, optional
+
+            updateSetNavigation(cardElement); // Just ensures correct enable/disable state
+        }
+
+        function updateSetNavigation(cardElement) {
+            const prevBtn = cardElement.querySelector('.prev-set-btn');
+            const nextBtn = cardElement.querySelector('.next-set-btn');
+            const sets = cardElement.querySelectorAll('.exercise-set');
+            const disabled = sets.length <= 1; // Disable if only one set or zero
+            if(prevBtn) prevBtn.disabled = disabled;
+            if(nextBtn) nextBtn.disabled = disabled;
+        }
+
+
+        function toggleCard(cardToToggle) {
+            if (!cardToToggle) return;
+            const isAlreadyExpanded = cardToToggle.classList.contains('is-expanded');
+            exerciseList.querySelectorAll('.exercise-card.is-expanded').forEach(card => {
+                if (card !== cardToToggle) {
+                    card.classList.remove('is-expanded');
+                     // Reset sets when collapsing other cards
+                     const setsToReset = card.querySelectorAll('.exercise-set.active-set');
+                     setsToReset.forEach(set => set.classList.remove('active-set'));
+                }
+            });
+            if (isAlreadyExpanded) {
+                cardToToggle.classList.remove('is-expanded');
+                 if (activeCard === cardToToggle) { resetHeader(); }
+                 // Reset its own sets on collapse
+                 const setsToReset = cardToToggle.querySelectorAll('.exercise-set.active-set');
+                 setsToReset.forEach(set => set.classList.remove('active-set'));
+            } else {
+                cardToToggle.classList.add('is-expanded');
+                 updateHeader(cardToToggle);
+                 updateExpandedContent(cardToToggle); // This now calls initializeActiveSet
+                 setTimeout(() => {
+                    cardToToggle.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                 }, 100);
+             }
+        }
+
+        function createSetHTML(setNumber, targetReps = '?', targetWeight = '?', isSplit = false) { const repInputHTML = isSplit ? `<label>L:<input type="number" class="input-reps-l" placeholder="${targetReps}"></label><label>R:<input type="number" class="input-reps-r" placeholder="${targetReps}"></label>` : `<label>Reps:<input type="number" class="input-reps" placeholder="${targetReps}"></label>`; return ` <div class="exercise-set" data-set-number="${setNumber}"><div class="set-header"><span class="set-label">Set ${setNumber}</span></div><p class="set-targets">Target: ${targetReps} Reps @ ${targetWeight} lbs</p><div class="set-main-row"><div class="set-inputs-group"><label>Wt:<input type="number" class="input-weight" placeholder="${targetWeight}"></label>${repInputHTML}<label>Notes:<input type="text" class="input-notes" placeholder="Notes..."></label></div><label class="set-complete-wrapper"><input type="checkbox" class="set-complete-checkbox"><span>Done</span></label></div><div class="set-info"><span class="info-item">Tempo: - <i class="fas fa-question-circle help-icon" data-help="tempo"></i></span><span class="info-item">RPE: - <i class="fas fa-question-circle help-icon" data-help="rpe"></i></span></div></div>`; }
+        function addExerciseCard(payload) { const { exerciseName, summary = 'N/A', muscles = 'Unknown', imgSrc = '', videoSrc = '', sets = 3, targetReps = '?', targetWeight = '?', repsPerSide = false } = payload; const newId = generateUniqueExerciseId(); const placeholderImg = 'https://via.placeholder.com/100x100/333333/888888/?text=Set'; const collapsedImgSrc = imgSrc || placeholderImg.replace('100x100', '100x100'); const posterImgSrc = imgSrc || placeholderImg.replace('100x100', '400x225'); const card = document.createElement('article'); card.classList.add('exercise-card'); card.id = `${exerciseName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-card-${newId}`; card.dataset.exerciseId = newId; card.dataset.exerciseName = exerciseName; card.dataset.muscles = muscles; card.dataset.imgSrc = imgSrc; card.dataset.videoSrc = videoSrc; card.dataset.summary = summary; let setsHTML = ''; const numSets = parseInt(sets, 10) || 3; for (let i = 1; i <= numSets; i++) { setsHTML += createSetHTML(i, targetReps, targetWeight, repsPerSide); } const videoHTML = videoSrc ? `<source src="${videoSrc}" type="video/mp4"> Video not supported.` : `<p>Video not available.</p>`; const videoDisabled = !videoSrc ? 'disabled' : ''; card.innerHTML = ` <div class="card-collapsed"><img class="collapsed-img" src="${collapsedImgSrc}" alt="${exerciseName} thumbnail" loading="lazy"><span class="collapsed-name">${exerciseName}</span><span class="collapsed-summary">${summary}</span><button class="remove-exercise-btn" title="Remove Exercise">×</button></div> <div class="card-expanded"><div class="expanded-media"><div class="media-container showing-image"><img src="${posterImgSrc}" alt="${exerciseName} Demonstration"><video preload="metadata" controls poster="${posterImgSrc}">${videoHTML}</video></div><div class="media-toggles"><button class="media-toggle-btn active" data-media-type="image">Show Image</button><button class="media-toggle-btn" data-media-type="video" ${videoDisabled}>Show Video</button></div><h3 class="expanded-primary-label">${muscles.split(',')[0]?.trim() || 'Exercise'}</h3><p class="expanded-muscles">${muscles}</p></div><div class="expanded-details"><p class="sets-target-info">${summary}</p><div class="set-navigation"><button class="set-nav-btn prev-set-btn"><i class="fas fa-chevron-left"></i> Prev</button><button class="set-nav-btn next-set-btn">Next <i class="fas fa-chevron-right"></i></button></div><div class="sets-container">${setsHTML}</div></div></div>`; addExerciseManualBtn.insertAdjacentElement('beforebegin', card); updateStatus(`Added ${exerciseName}.`, 'success', 3000); setTimeout(() => { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); toggleCard(card); }, 100); }
+        function removeExerciseCard(cardElement) { if (!cardElement || cardElement.classList.contains('removing')) return; const exerciseName = cardElement.dataset.exerciseName || 'the exercise'; cardElement.classList.add('removing'); cardElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease, height 0.3s ease, margin-bottom 0.3s ease, padding 0.3s ease, border-width 0.3s ease'; cardElement.style.opacity = '0'; cardElement.style.transform = 'scale(0.95)'; cardElement.style.height = '0px'; cardElement.style.marginTop = '0'; cardElement.style.marginBottom = '0'; cardElement.style.paddingTop = '0'; cardElement.style.paddingBottom = '0'; cardElement.style.borderWidth = '0'; setTimeout(() => { if (activeCard === cardElement) { resetHeader(); } cardElement.remove(); updateStatus(`Removed ${exerciseName}.`, 'success', 3000); }, 300); }
+        function updateSetField(cardElement, setNumber, field, value) { if (!cardElement) return false; const setElement = cardElement.querySelector(`.exercise-set[data-set-number="${setNumber}"]`); if (!setElement) { console.error(`Set element not found for set number: ${setNumber} in card:`, cardElement.id); return false; } let inputElement; let targetLabel; let success = false; try { switch (field.toLowerCase()) { case 'wt': case 'weight': inputElement = setElement.querySelector('.input-weight'); break; case 'reps': inputElement = setElement.querySelector('.input-reps'); break; case 'reps-l': inputElement = setElement.querySelector('.input-reps-l'); break; case 'reps-r': inputElement = setElement.querySelector('.input-reps-r'); break; case 'notes': inputElement = setElement.querySelector('.input-notes'); break; case 'completed': case 'done': inputElement = setElement.querySelector('.set-complete-checkbox'); const boolValue = ['true', 'yes', '1', 'on', 'checked'].includes(String(value).toLowerCase()); if (inputElement) { inputElement.checked = boolValue; setElement.classList.toggle('set-is-complete', boolValue); success = true; } break; default: console.warn(`Unsupported field update request: ${field}`); return false; } if (inputElement && field.toLowerCase() !== 'completed' && field.toLowerCase() !== 'done') { inputElement.value = value; success = true; } else if (!inputElement && field.toLowerCase() !== 'completed' && field.toLowerCase() !== 'done') { console.error(`Input element not found for field '${field}' in set ${setNumber}`); return false; } if (success && inputElement) { targetLabel = inputElement.closest('label') || inputElement.closest('.set-complete-wrapper'); const elementToHighlight = targetLabel || inputElement; elementToHighlight.classList.add('set-field-updated'); elementToHighlight.addEventListener('animationend', () => { elementToHighlight.classList.remove('set-field-updated'); }, { once: true }); return true; } else if (success && (field.toLowerCase() === 'completed' || field.toLowerCase() === 'done')) { return true; } } catch (error) { console.error(`Error updating field '${field}' for set ${setNumber}:`, error); } return false; }
+        function updateStatus(message, type = 'info', duration = 4000) { if (!aiStatus) return; console.log(`Status (${type}): ${message}`); aiStatus.textContent = message; aiStatus.className = `ai-status-display status-${type}`; aiStatus.classList.add('visible'); if (aiStatus.timerId) { clearTimeout(aiStatus.timerId); aiStatus.timerId = null; } if (duration > 0) { aiStatus.timerId = setTimeout(() => { aiStatus.classList.remove('visible'); aiStatus.timerId = null; }, duration); } }
+        function showHelp(topic) { let message = "No explanation available."; switch (topic) { case 'rpe': message = "RPE (Rate of Perceived Exertion): How hard the set felt (1-10 scale). 10=Max effort, 9=1 rep left, 8=2 reps left, etc."; break; case 'tempo': message = "Tempo (e.g., 3-1-1-0): Speed (sec):\n1. Lowering\n2. Bottom Pause\n3. Lifting\n4. Top Pause"; break; } alert(message); }
+
+        exerciseList.addEventListener('click', (event) => {
+            const target = event.target; const card = target.closest('.exercise-card'); if (!card) return;
+            const collapsedHeader = target.closest('.card-collapsed'); if (collapsedHeader && !target.closest('.remove-exercise-btn')) { toggleCard(card); return; }
+            const removeButton = target.closest('.remove-exercise-btn'); if (removeButton) { event.stopPropagation(); if (confirm(`Remove ${card.dataset.exerciseName || 'this exercise'}?`)) { removeExerciseCard(card); } return; }
+            const mediaToggleButton = target.closest('.media-toggle-btn'); if (mediaToggleButton && !mediaToggleButton.disabled) { toggleMediaView(card, mediaToggleButton.dataset.mediaType); return; }
+            const navButton = target.closest('.set-nav-btn'); if (navButton && !navButton.disabled) { changeActiveSet(card, navButton.classList.contains('next-set-btn') ? 'next' : 'prev'); return; } // Carousel Navigation
+            const helpIcon = target.closest('.help-icon'); if (helpIcon) { showHelp(helpIcon.dataset.help); return; }
+            const completeWrapper = target.closest('.set-complete-wrapper'); if (completeWrapper && !target.matches('.set-complete-checkbox')) { const checkbox = completeWrapper.querySelector('.set-complete-checkbox'); if (checkbox) { checkbox.checked = !checkbox.checked; checkbox.dispatchEvent(new Event('change', { bubbles: true })); } return; }
+        });
+        exerciseList.addEventListener('change', (event) => { const target = event.target; if (target.matches('.set-complete-checkbox')) { const isChecked = target.checked; const setElement = target.closest('.exercise-set'); const cardElement = target.closest('.exercise-card'); if (setElement && cardElement) { setElement.classList.toggle('set-is-complete', isChecked); updateStatus(`Set ${setElement.dataset.setNumber} marked ${isChecked ? 'complete' : 'incomplete'}.`, 'info', 1500); } } });
+        addExerciseManualBtn.addEventListener('click', () => { const name = prompt("Enter exercise name:", "New Exercise"); if (!name) return; const summary = prompt("Enter sets/reps summary (e.g., 3x10):", "3x10") || "3x10"; let sets = 3, targetReps = '10', targetWeight = '?', repsPerSide = false; const setsMatch = summary.match(/^(\d+)\s*x/i); if (setsMatch) sets = parseInt(setsMatch[1], 10); const repsMatch = summary.match(/x\s*([\d-]+)/i); if (repsMatch) targetReps = repsMatch[1]; const weightMatch = summary.match(/@\s*(\d+)/i); if (weightMatch) targetWeight = weightMatch[1]; if (summary.toLowerCase().includes('each') || summary.toLowerCase().includes(' ea')) repsPerSide = true; const muscles = prompt("Enter main muscle groups:", "Unknown"); const imgUrl = prompt("Optional: Enter image URL:", ""); const videoUrl = prompt("Optional: Enter video URL:", ""); addExerciseCard({ exerciseName: name, summary, sets, muscles, imgSrc: imgUrl, videoSrc: videoUrl, targetReps, targetWeight, repsPerSide }); });
+        function initialiseWorkoutView() { const initiallyExpandedCard = exerciseList.querySelector('.exercise-card.is-expanded'); if (initiallyExpandedCard) { toggleCard(initiallyExpandedCard); } else { resetHeader(); } window.workoutApp = { addExerciseCard, removeExerciseCard, updateSetField, updateStatus, getTargetExerciseCard, }; }
+        initialiseWorkoutView();
+    });
+    </script>
+     <script>
+        document.addEventListener('DOMContentLoaded', () => { if (typeof window.workoutApp === 'undefined') { console.error("CRITICAL: script.js failed to initialize workoutApp."); alert("Application error: Core UI script failed."); return; } const { addExerciseCard, removeExerciseCard, updateSetField, updateStatus, getTargetExerciseCard } = window.workoutApp; const aiInput = document.getElementById('ai-input'); const aiSendBtn = document.getElementById('ai-send-btn'); let isAISending = false; async function callAIApi(userQuery) { if (isAISending) return null; updateStatus("Sending to AI...", "loading", 0); isAISending = true; aiSendBtn.disabled = true; aiInput.disabled = true; const backendEndpoint = '/api/gemini'; try { const response = await fetch(backendEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: userQuery }) }); if (!response.ok) { let errorData = { message: `Server error (${response.status})` }; try { errorData = await response.json(); } catch (e) {} throw new Error(`API Error: ${errorData.message || response.statusText}`); } const result = await response.json(); console.log("AI Raw Response:", result); if (!result || typeof result.action === 'undefined' || typeof result.payload === 'undefined') { console.error("Invalid response structure:", result); throw new Error("Received incomplete data from AI service."); } return result; } catch (error) { console.error("Error calling AI API:", error); const displayError = error.message.startsWith("API Error") ? error.message : "Network or processing error."; return { action: "ERROR", payload: { error: error.message }, userMessage: `Sorry, an error occurred. ${displayError}` }; } finally { isAISending = false; aiSendBtn.disabled = false; aiInput.disabled = false; const currentStatus = document.getElementById('ai-status'); setTimeout(() => { if (currentStatus && currentStatus.classList.contains('status-loading') && !currentStatus.classList.contains('status-error')) { updateStatus('', 'info', 0); } }, 750); } }
+            function handleAiResponse(aiResponse) { if (!aiResponse) { updateStatus("Received no response from AI.", "error", 5000); return; }; const statusType = aiResponse.action === "ERROR" ? "error" : (aiResponse.action === "REQUEST_CLARIFICATION" ? "info" : "success"); const statusDuration = aiResponse.action === "REQUEST_CLARIFICATION" ? 0 : (statusType === 'error' ? 6000 : 4000); const userMsg = aiResponse.userMessage || (aiResponse.action === 'ERROR' ? 'An error occurred.' : 'Processing complete.'); updateStatus(userMsg, statusType, statusDuration); let success = false; let targetCard; try { switch (aiResponse.action) { case "ADD_EXERCISE": addExerciseCard(aiResponse.payload); success = true; break; case "REMOVE_EXERCISE": targetCard = getTargetExerciseCard(aiResponse.payload); if (targetCard) { removeExerciseCard(targetCard); success = true; } else { console.error("AI remove failed: Target card not found.", aiResponse.payload); } break; case "UPDATE_SET": targetCard = getTargetExerciseCard(aiResponse.payload); if (targetCard) { success = updateSetField(targetCard, aiResponse.payload.targetSetNumber, aiResponse.payload.field, aiResponse.payload.value); if (!success) console.error("AI update failed: Field or set not found.", aiResponse.payload); } else { console.error("AI update failed: Target card not found.", aiResponse.payload); } break; case "UPDATE_EXERCISE_MEDIA": targetCard = getTargetExerciseCard(aiResponse.payload); if (targetCard) { const newImg = aiResponse.payload.imageUrl; const newVid = aiResponse.payload.videoUrl; let updated = false; if (newImg) { targetCard.dataset.imgSrc = newImg; updated = true; } if (newVid) { targetCard.dataset.videoSrc = newVid; updated = true; } if (updated && targetCard.classList.contains('is-expanded')) { console.warn("Media updated for open card - visual refresh needed."); } success = updated; if(updated) updateStatus("Exercise media updated.", "success", 3000); } else { console.error("AI update media failed: Target card not found.", aiResponse.payload); } break; case "REQUEST_CLARIFICATION": success = true; aiInput.select(); aiInput.focus(); break; case "INFO": success = true; break; case "ERROR": console.error("AI Error reported:", aiResponse.payload?.error || aiResponse.userMessage); success = false; break; default: console.warn("Unknown AI action:", aiResponse.action, aiResponse); updateStatus(`Received unknown command: ${aiResponse.action}`, "error", 5000); } } catch (error) { console.error("Error processing AI response:", error, aiResponse); updateStatus(`Client error handling AI response: ${error.message}`, "error", 5000); success = false; } if (success && !["REQUEST_CLARIFICATION", "INFO", "ERROR"].includes(aiResponse.action)) { aiInput.value = ''; } else if (!success && aiResponse.action !== 'ERROR') { aiInput.select(); } }
+            async function sendQueryToAI() { const query = aiInput.value.trim(); if (!query) { updateStatus("Please enter a command.", "info", 2000); return; } const aiResponse = await callAIApi(query); handleAiResponse(aiResponse); }
+            aiSendBtn.addEventListener('click', sendQueryToAI); aiInput.addEventListener('keydown', (event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendQueryToAI(); } }); console.log("script1.js (AI interaction handler) initialized."); });
+     </script>
+</body>
+</html>

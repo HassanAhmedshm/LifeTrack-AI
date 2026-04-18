@@ -1,0 +1,41 @@
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    height: 70px; /* Standard height */
+    background-color: var(--deep-black);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    border-top: 1px solid var(--dark-grey);
+    z-index: 1000; /* Ensure it's above content */
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem; /* Smaller gap */
+    color: var(--light-grey);
+    text-decoration: none;
+    font-size: 0.75rem; /* Smaller text */
+    padding: 0.5rem;
+    flex: 1; /* Distribute space evenly */
+    text-align: center;
+     transition: color 0.2s ease;
+}
+
+.nav-item i {
+    font-size: 1.3rem; /* Slightly larger icons */
+     margin-bottom: 2px; /* Space between icon and text */
+}
+
+.nav-item.active {
+    color: var(--bright-yellow);
+}
+ .nav-item:hover:not(.active) {
+     color: var(--white); /* Highlight on hover */
+ }

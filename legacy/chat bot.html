@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Chat - Enhanced</title>
+  <link rel="stylesheet" href="./fontawesome-free-6.7.1-web/css/all.css" />
+  <link rel="stylesheet" href="./main.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    :root {
+      --bg-color: #0f0f0f;
+      --primary-container-bg: #0f0f0f;
+      --secondary-container-bg: #333333;
+      --input-bg: #333333;
+      --ai-bubble-bg: #333333;
+      --suggestion-bubble-bg: #333333;
+      --welcome-bubble-bg: #333333;
+      --audio-user-icon-bg: #555555;
+      --accent-yellow: #f2c464;
+      --user-bubble-bg: var(--accent-yellow);
+      --send-icon-color: var(--accent-yellow);
+      --audio-mic-overlay-bg: var(--accent-yellow);
+      --audio-progress-dot-color: var(--accent-yellow);
+      --audio-ticks-color: var(--accent-yellow);
+      --secondary-highlight-bg: #f2f2f2;
+      --image-placeholder-bg: var(--secondary-highlight-bg);
+      --text-secondary: #f2f2f2;
+      --audio-duration-color: var(--text-secondary);
+      --audio-timestamp-color: var(--text-secondary);
+      --text-primary: #ffffff;
+      --ai-text-color: #ffffff;
+      --header-icon-color: #ffffff;
+      --input-icon-color: #ffffff;
+      --audio-play-btn-color: #ffffff;
+      --audio-waveform-color: #ffffff;
+      --wellness-color: #c9bbaa;
+      --user-text-color: #0f0f0f;
+      --audio-play-btn-color-on-user: #0f0f0f;
+      --audio-waveform-color-on-user: #0f0f0f;
+      --audio-duration-color-on-user: #0f0f0f;
+      --audio-timestamp-color-on-user: #0f0f0f;
+      --audio-user-icon-color-on-user: #ffffff;
+      --font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      --suggestion-bubble-hover-bg: #4a4a4a;
+      --border-color: #555555;
+      --image-placeholder-text-color: #333333;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-color);
+      color: var(--text-primary);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .chat-app-container {
+      width: 100%;
+      height: 100%;
+      max-width: 450px;
+      max-height: 850px;
+      background-color: var(--primary-container-bg);
+      border-radius: 15px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      position: relative;
+      /* Needed for fixed bottom nav relative positioning if container size changes */
+    }
+
+    .chat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 15px;
+      background-color: var(--secondary-container-bg);
+      border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
+      /* Prevent header from shrinking */
+    }
+
+    .chat-header .icon {
+      font-size: 1.5rem;
+      color: var(--header-icon-color);
+      cursor: pointer;
+    }
+
+    .chat-area {
+      flex-grow: 1;
+      padding: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: 85px;
+      /* Add padding to prevent overlap with fixed nav */
+    }
+
+    .initial-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-grow: 1;
+      padding-bottom: 20px;
+    }
+
+    .chat-active .initial-state {
+      display: none;
+    }
+
+    .suggestions-container {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 30px;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .suggestion-bubble {
+      background-color: var(--suggestion-bubble-bg);
+      color: var(--text-primary);
+      width: 48%;
+      padding: 10px 15px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      text-align: center;
+      transition: background-color 0.2s ease;
+      border: 1px solid var(--border-color);
+      white-space: normal;
+      /* Allow wrapping */
+      line-height: 1.3;
+    }
+
+    .suggestion-bubble:hover {
+      background-color: var(--suggestion-bubble-hover-bg);
+    }
+
+    .message-list {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      /* Increased gap slightly */
+      width: 100%;
+      flex-grow: 1;
+    }
+
+    .chat-active .message-list {
+      display: flex;
+    }
+
+    .message-container {
+      display: flex;
+      width: 100%;
+    }
+
+    .message-container.user {
+      justify-content: flex-end;
+    }
+
+    .message-container.ai {
+      justify-content: flex-start;
+    }
+
+    .message-bubble {
+      max-width: 80%;
+      padding: 8px 12px;
+      /* Standardized padding */
+      border-radius: 15px;
+      /* Slightly rounder */
+      font-size: 0.95rem;
+      /* Slightly larger text */
+      line-height: 1.4;
+      position: relative;
+      word-wrap: break-word;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .message-bubble.user {
+      background-color: var(--user-bubble-bg);
+      color: var(--user-text-color);
+      border-bottom-right-radius: 4px;
+      /* Adjust shape */
+    }
+
+    .message-bubble.user .audio-player-container .play-pause-btn {
+      color: var(--audio-play-btn-color-on-user);
+    }
+
+    .message-bubble.user .audio-player-container .waveform span {
+      background-color: var(--audio-waveform-color-on-user);
+    }
+
+    .message-bubble.user .audio-player-container .audio-duration {
+      color: var(--audio-duration-color-on-user);
+    }
+
+    .message-bubble.user .message-meta {
+      /* Simplified meta positioning */
+      color: var(--audio-timestamp-color-on-user);
+    }
+
+    .message-bubble.user .audio-player-container .mic-overlay {
+      border: 1px solid var(--user-bubble-bg);
+    }
+
+    .message-bubble.user .audio-player-container .audio-profile i {
+      color: var(--audio-user-icon-color-on-user);
+    }
+
+    .message-bubble.ai {
+      background-color: var(--ai-bubble-bg);
+      color: var(--ai-text-color);
+      border-bottom-left-radius: 4px;
+      /* Adjust shape */
+    }
+
+    .message-bubble.ai .audio-player-container .play-pause-btn {
+      color: var(--audio-play-btn-color);
+    }
+
+    .message-bubble.ai .audio-player-container .waveform span {
+      background-color: var(--audio-waveform-color);
+    }
+
+    .message-bubble.ai .audio-player-container .audio-duration {
+      color: var(--audio-duration-color);
+    }
+
+    .message-bubble.ai .message-meta {
+      /* Simplified meta positioning */
+      color: var(--audio-timestamp-color);
+    }
+
+    .message-bubble.ai .audio-player-container .mic-overlay {
+      border: 1px solid var(--ai-bubble-bg);
+    }
+
+    .message-bubble.ai .audio-player-container .audio-profile i {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .message-text {
+      padding-bottom: 18px;
+      /* Ensure space for meta */
+    }
+
+    .message-text:only-child {
+      /* Reduce padding if only text exists */
+      padding-bottom: 18px;
+      /* Still need space for timestamp below */
+    }
+
+    .message-image {
+      background-color: var(--image-placeholder-bg);
+      border-radius: 6px;
+      margin-top: 5px;
+      color: var(--image-placeholder-text-color);
+      font-style: italic;
+      min-height: 150px;
+      max-width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .message-image span {
+      padding: 10px;
+    }
+
+    .audio-player-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 5px;
+      min-width: 250px;
+      /* Prevent excessive shrinking */
+      position: relative;
+      padding-bottom: 18px;
+      /* Ensure space for meta below */
+    }
+
+    .audio-profile {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: var(--audio-user-icon-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .mic-overlay {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 18px;
+      height: 18px;
+      background-color: var(--audio-mic-overlay-bg);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mic-overlay i {
+      color: var(--user-text-color);
+      font-size: 0.6rem;
+    }
+
+    .play-pause-btn {
+      background: none;
+      border: none;
+      font-size: 1.6rem;
+      cursor: pointer;
+      padding: 0 5px;
+      flex-shrink: 0;
+      color: inherit;
+      /* Inherit color from bubble */
+      transition: color 0.2s ease;
+    }
+
+    .play-pause-btn:hover {
+      filter: brightness(1.2);
+    }
+
+    .audio-progress-area {
+      flex-grow: 1;
+      display: flex;
+      align-items: center;
+      height: 25px;
+      /* Slightly taller waveform */
+      position: relative;
+      margin: 0 5px;
+      /* Add horizontal margin */
+    }
+
+    .waveform {
+      display: flex;
+      align-items: flex-end;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .waveform span {
+      display: inline-block;
+      width: 2.5px;
+      margin-right: 1.5px;
+      border-radius: 1px;
+      flex-shrink: 0;
+      height: var(--spike-height, 20%);
+      background-color: inherit;
+      /* Inherit color from bubble */
+    }
+
+    .progress-dot {
+      width: 10px;
+      height: 10px;
+      background-color: var(--audio-progress-dot-color);
+      border-radius: 50%;
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      transition: left 0.1s linear;
+      z-index: 2;
+      /* Ensure dot is above waveform */
+    }
+
+    .audio-duration {
+      font-size: 0.75rem;
+      margin-left: 8px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      color: inherit;
+      /* Inherit color */
+      opacity: 0.8;
+    }
+
+    .message-meta {
+      position: absolute;
+      bottom: 3px;
+      right: 9px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.7rem;
+      user-select: none;
+      color: inherit;
+      /* Inherit color */
+      opacity: 0.8;
+    }
+
+    .message-meta .status-ticks {
+      color: var(--audio-ticks-color);
+      font-size: 0.8rem;
+    }
+
+    .chat-input-area {
+      display: flex;
+      align-items: center;
+      margin-bottom: 70px;
+      padding: 10px 15px;
+      background-color: var(--secondary-container-bg);
+      border-top: 1px solid var(--border-color);
+      gap: 10px;
+      flex-shrink: 0;
+      /* Prevent input area from shrinking */
+    }
+
+    .input-action-button {
+      background: none;
+      border: none;
+      color: var(--input-icon-color);
+      font-size: 1.4rem;
+      cursor: pointer;
+      padding: 5px;
+      transition: color 0.2s ease;
+    }
+
+    .input-action-button:hover {
+      color: var(--accent-yellow);
+    }
+
+    .chat-input {
+      flex-grow: 1;
+      background-color: var(--input-bg);
+      border: 1px solid #555;
+      border-radius: 20px;
+      padding: 10px 15px;
+      color: var(--text-primary);
+      font-size: 1rem;
+      outline: none;
+      resize: none;
+      /* Prevent manual resizing */
+      min-height: 40px;
+      /* Ensure consistent height */
+      line-height: 1.4;
+    }
+
+    .chat-input::placeholder {
+      color: var(--text-secondary);
+      opacity: 0.7;
+    }
+
+    .send-button {
+      background: none;
+      border: none;
+      color: var(--send-icon-color);
+      font-size: 1.6rem;
+      cursor: pointer;
+      padding: 5px;
+      transition: filter 0.2s ease, color 0.2s ease;
+      /* Added color transition */
+    }
+
+    .send-button:hover {
+      filter: brightness(1.2);
+    }
+
+    .send-button:disabled {
+      /* Style for disabled state */
+      color: #666;
+      cursor: not-allowed;
+      filter: grayscale(50%);
+    }
+
+    .chat-area::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .chat-area::-webkit-scrollbar-track {
+      background: var(--secondary-container-bg);
+      border-radius: 3px;
+    }
+
+    .chat-area::-webkit-scrollbar-thumb {
+      background-color: #555;
+      border-radius: 3px;
+    }
+
+    /* ---- Bottom Navigation Bar Styles ---- */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 450px;
+      height: 70px;
+      background-color: var(--primary-container-bg);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      border-top: 1px solid var(--border-color);
+      z-index: 1000;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+      color: var(--text-secondary);
+      /* Use text secondary */
+      text-decoration: none;
+      font-size: 0.75rem;
+      padding: 0.5rem;
+      flex: 1;
+      text-align: center;
+      transition: color 0.2s ease;
+    }
+
+    .nav-item i {
+      font-size: 1.3rem;
+      margin-bottom: 2px;
+    }
+
+    .nav-item.active {
+      color: var(--accent-yellow);
+      /* Use defined accent yellow */
+    }
+
+    .nav-item:hover:not(.active) {
+      color: var(--text-primary);
+      /* Use primary text color (white) */
+    }
+  </style>
+</head>
+
+<body>
+  <div class="chat-app-container">
+    <header class="chat-header">
+      <a href="./home.html" style="color: inherit; text-decoration: none;"><i
+          class="fas fa-chevron-left icon back-button"></i></a>
+      <span>AI Assistant</span>
+      <i class="fas fa-cog icon settings-button" id="settings-chat"></i>
+    </header>
+
+    <div class="chat-area" id="chat-area">
+      <div class="initial-state">
+        <div class="welcome-bubble" style="margin-bottom: 20px;">
+          <i class="fas fa-robot" style="font-size: 3em;"></i>
+        </div>
+        <div class="suggestions-container">
+          <div class="suggestion-bubble" data-suggestion="Log my workout">Log my workout</div>
+          <div class="suggestion-bubble" data-suggestion="What are my goals?">What are my goals?</div>
+          <div class="suggestion-bubble" data-suggestion="Suggest a healthy recipe">Suggest a healthy recipe</div>
+          <div class="suggestion-bubble" data-suggestion="Update my Flow">Update my Flow</div>
+        </div>
+      </div>
+      <div class="message-list" id="message-list">
+      </div>
+    </div>
+
+    <div class="chat-input-area">
+      <button class="input-action-button" id="camera-button" aria-label="Attach media"><i
+          class="fas fa-paperclip"></i></button>
+      <input type="text" class="chat-input" id="chat-input" placeholder="Ask AI Assistant...">
+      <button class="input-action-button" id="mic-button" aria-label="Use microphone"><i
+          class="fas fa-microphone"></i></button>
+      <button class="send-button" id="send-button" aria-label="Send message" disabled><i
+          class="fas fa-paper-plane"></i></button>
+    </div>
+
+    <nav class="bottom-nav">
+      <a href="#settings" class="nav-item">
+        <i class="fas fa-cog"></i>
+        <span>Settings</span>
+      </a>
+      <a href="./chat bot.html" class="nav-item active">
+        <i class="fas fa-comments"></i>
+        <span>Chat</span>
+      </a>
+      <a href="./home.html" class="nav-item">
+        <i class="fas fa-home"></i>
+        <span>Home</span>
+      </a>
+      <a href="./Flow.html" class="nav-item">
+        <i class="fas fa-bolt"></i>
+        <span>Flow</span>
+      </a>
+      <a href="./goals.html" class="nav-item">
+        <i class="fas fa-bullseye"></i>
+        <span>Goals</span>
+      </a>
+    </nav>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const chatArea = document.getElementById("chat-area");
+      const messageList = document.getElementById("message-list");
+      const chatInput = document.getElementById("chat-input");
+      const sendButton = document.getElementById("send-button");
+      const cameraButton = document.getElementById("camera-button");
+      const micButton = document.getElementById("mic-button");
+      const suggestionBubbles = document.querySelectorAll(".suggestion-bubble");
+      const settingsButton = document.getElementById("settings-chat");
+
+      let chatIsActive = false;
+
+      const activateChat = () => {
+        if (!chatIsActive && chatArea) {
+          chatArea.classList.add("chat-active");
+          chatIsActive = true;
+        }
+      };
+
+      const scrollToBottom = () => {
+        if (chatArea) {
+          chatArea.scrollTop = chatArea.scrollHeight;
+        }
+      };
+
+      const generateWaveformSpikes = (count = 35) => {
+        let spikesHTML = "";
+        const heights = [15, 30, 50, 70, 60, 40, 25, 35, 55, 75, 85, 70, 50, 30, 45, 65, 80, 90, 75, 60, 40, 50, 70, 85, 65, 45, 30, 20, 40, 60, 75, 55, 35, 25, 15];
+        for (let i = 0; i < count; i++) {
+          const height = heights[i % heights.length];
+          spikesHTML += `<span style="--spike-height: ${height}%;"></span>`;
+        }
+        return spikesHTML;
+      };
+
+      const createAudioPlayerElement = (durationStr = "0:11") => {
+        const player = document.createElement("div");
+        player.className = "audio-player-container";
+        const currentTime = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
+
+        player.innerHTML = `
+            <div class="audio-profile">
+              <i class="fas fa-user"></i>
+              <span class="mic-overlay"><i class="fas fa-microphone"></i></span>
+            </div>
+            <button class="play-pause-btn" data-playing="false"><i class="fas fa-play"></i></button>
+            <div class="audio-progress-area">
+                <div class="waveform">${generateWaveformSpikes()}</div>
+                <span class="progress-dot" style="left: 0%;"></span>
+            </div>
+            <span class="audio-duration">${durationStr}</span>
+          `;
+
+        const meta = createMetaElement(currentTime, true); // Always show ticks for audio example
+        player.appendChild(meta); // Append meta inside the player
+
+
+        const playBtn = player.querySelector(".play-pause-btn");
+        const progressDot = player.querySelector(".progress-dot");
+        let animationFrameId = null; // To control animation
+
+        playBtn.addEventListener("click", () => {
+          const isPlaying = playBtn.getAttribute("data-playing") === "true";
+          if (isPlaying) {
+            playBtn.innerHTML = '<i class="fas fa-play"></i>';
+            playBtn.setAttribute("data-playing", "false");
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            progressDot.style.transition = "none"; // Stop smooth transition
+            progressDot.style.left = "0%"; // Reset dot
+          } else {
+            playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            playBtn.setAttribute("data-playing", "true");
+            progressDot.style.transition = 'left 5s linear'; // Example duration
+            progressDot.style.left = '95%'; // Animate to near end
+            // Simple animation for demo
+            // let start = null;
+            // function step(timestamp) {
+            //     if (!start) start = timestamp;
+            //     const elapsed = timestamp - start;
+            //     const progress = Math.min(elapsed / 5000, 1); // 5 second duration example
+            //     progressDot.style.left = `${progress * 95}%`; // Move up to 95%
+            //     if (progress < 1) {
+            //        animationFrameId = requestAnimationFrame(step);
+            //     } else {
+            //        // Optionally reset or change icon back
+            //        playBtn.innerHTML = '<i class="fas fa-play"></i>';
+            //        playBtn.setAttribute("data-playing", "false");
+            //        progressDot.style.left = "0%";
+            //     }
+            // }
+            // animationFrameId = requestAnimationFrame(step);
+          }
+        });
+
+        return player;
+      };
+
+
+      const createMetaElement = (timestamp, showTicks = false) => {
+        const meta = document.createElement('div');
+        meta.className = 'message-meta';
+        let ticksHTML = '';
+        if (showTicks) {
+          ticksHTML = '<span class="status-ticks"><i class="fas fa-check-double"></i></span>';
+        }
+        meta.innerHTML = `<span class="timestamp">${timestamp}</span>${ticksHTML}`;
+        return meta;
+      };
+
+      const addMessage = (options) => {
+        activateChat();
+        const messageContainer = document.createElement("div");
+        messageContainer.className = `message-container ${options.type}`;
+        const messageBubble = document.createElement("div");
+        messageBubble.classList.add("message-bubble", options.type);
+        const currentTime = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
+
+        if (options.text) {
+          const textElement = document.createElement("div");
+          textElement.className = "message-text";
+          textElement.appendChild(document.createTextNode(options.text));
+          messageBubble.appendChild(textElement);
+        }
+
+        if (options.includeImage) {
+          const imageElement = document.createElement("div");
+          imageElement.classList.add("message-image");
+          imageElement.innerHTML = `<span>Image Placeholder</span>`;
+          messageBubble.appendChild(imageElement);
+        }
+
+        if (options.includeAudio) {
+          const audioPlayer = createAudioPlayerElement();
+          messageBubble.appendChild(audioPlayer);
+        }
+
+        if (!options.includeAudio) { // Only add separate meta if no audio player
+          const showTicks = options.type === 'user';
+          const meta = createMetaElement(currentTime, showTicks);
+          messageBubble.appendChild(meta);
+        }
+
+
+        messageContainer.appendChild(messageBubble);
+
+        if (messageList) {
+          messageList.appendChild(messageContainer);
+          scrollToBottom();
+        } else {
+          console.error("Message list element not found!");
+        }
+      };
+
+      const handleSend = () => {
+        const inputText = chatInput.value.trim();
+        if (inputText === "") return;
+
+        addMessage({ text: inputText, type: "user" });
+        chatInput.value = "";
+        sendButton.disabled = true; // Disable after sending
+
+        setTimeout(() => {
+          const aiResponses = ["How can I assist further?", "Processing your request...", "Got it. What's next?", "Let me look into that."];
+          addMessage({ text: aiResponses[Math.floor(Math.random() * aiResponses.length)], type: "ai" });
+        }, 800);
+      };
+
+      const updateSendButtonState = () => {
+        sendButton.disabled = chatInput.value.trim() === '';
+      }
+
+      if (sendButton) sendButton.addEventListener("click", handleSend);
+      if (chatInput) {
+        chatInput.addEventListener("keypress", (e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            if (!sendButton.disabled) { // Only send if button is enabled
+              handleSend();
+            }
+          }
+        });
+        chatInput.addEventListener('input', updateSendButtonState); // Update on input change
+      }
+
+      if (cameraButton) cameraButton.addEventListener("click", () => alert("Attach media function not implemented."));
+      if (micButton) micButton.addEventListener("click", () => alert("Microphone function not implemented."));
+      if (settingsButton) settingsButton.addEventListener("click", () => alert("Settings action not implemented."));
+
+      suggestionBubbles.forEach((bubble) => {
+        bubble.addEventListener("click", () => {
+          const suggestionText = bubble.getAttribute("data-suggestion");
+          addMessage({
+            text: suggestionText,
+            type: 'user'
+          });
+
+          setTimeout(() => addMessage({ text: `Okay, let's talk about "${suggestionText}".`, type: "ai" }), 800);
+        });
+      });
+
+      updateSendButtonState(); // Initial check for send button state
+
+    });
+  </script>
+</body>
+
+</html>

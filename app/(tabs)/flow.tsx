@@ -1,88 +1,119 @@
-import { FlatList, Text, useWindowDimensions, View } from "react-native";
+import { useRef, useState } from "react";
+import { ScrollView, Text, useWindowDimensions, View } from "react-native";
+import Animated, { useAnimatedScrollHandler, useSharedValue } from "react-native-reanimated";
+import { Sparkles } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { FLOW_ITEMS, type FlowItem } from "../../src/components/flow/flowData";
+import { FlowCard } from "../../src/components/flow/FlowCard";
+import { FlowSlider } from "../../src/components/flow/FlowSlider";
+import {
+  FlowFullscreenOverlay,
+  type OverlayOrigin,
+} from "../../src/components/flow/FlowFullscreenOverlay";
 
-type FlowItem = {
-  id: string;
-  timeRange: string;
-  title: string;
-  suggestion: string;
+type SelectedCard = {
+  item: FlowItem;
+  imageUri: string;
 };
 
-const FLOW_ITEMS: FlowItem[] = [
-  {
-    id: "sleep",
-    timeRange: "00:00 - 07:00",
-    title: "Sleep & Recovery",
-    suggestion: "AI tip: Keep your room cool and dark for deeper recovery.",
-  },
-  {
-    id: "work",
-    timeRange: "08:00 - 12:00",
-    title: "Deep Work",
-    suggestion: "AI tip: Focus in 50-minute blocks, then take a short walk.",
-  },
-  {
-    id: "gym",
-    timeRange: "18:00 - 19:30",
-    title: "Gym Session",
-    suggestion: "AI tip: Prioritize compound lifts and progressive overload.",
-  },
-  {
-    id: "relax",
-    timeRange: "21:00 - 22:30",
-    title: "Relax & Reset",
-    suggestion: "AI tip: Limit screen time and prep tomorrow's priorities.",
-  },
-];
+const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
 export default function FlowScreen() {
+  const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
-  const cardWidth = screenWidth * 0.75;
+  const scrollRef = useRef<ScrollView>(null);
+  const [selectedCard, setSelectedCard] = useState<SelectedCard | null>(null);
+  const [selectedOrigin, setSelectedOrigin] = useState<OverlayOrigin | null>(null);
+  const scrollX = useSharedValue(0);
+
+  const cardWidth = Math.min(screenWidth * 0.74, 320);
   const itemGap = 16;
   const snapInterval = cardWidth + itemGap;
   const sidePadding = (screenWidth - cardWidth) / 2;
+  const maxScroll = Math.max((FLOW_ITEMS.length - 1) * snapInterval, 0);
+
+  const onScroll = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollX.value = event.contentOffset.x;
+    },
+  });
+
+  const openFullscreen = (item: FlowItem, imageUri: string, cardNode: View | null) => {
+    if (!cardNode) {
+      return;
+    }
+    cardNode.measureInWindow((x, y, width, height) => {
+      setSelectedOrigin({ x, y, width, height });
+      setSelectedCard({ item, imageUri });
+    });
+  };
+
+  const onSeek = (targetX: number) => {
+    const clamped = Math.max(0, Math.min(targetX, maxScroll));
+    scrollRef.current?.scrollTo({ x: clamped, animated: false });
+  };
 
   return (
-    <View className="flex-1 bg-dark pt-4">
-      <View className="px-4">
-        <Text className="text-3xl font-bold text-white">Flow</Text>
-        <Text className="mt-2 text-white/70">
-          Your daily schedule blocks, optimized for consistency.
+    <View className="flex-1 bg-[#0f0f0f]">
+      <View className="px-4 pt-4">
+        <Text className="text-3xl font-extrabold text-white">Flow</Text>
+        <Text className="mt-2 text-sm leading-6 text-white/75">
+          Cinematic timeline with focus-depth transitions and precision navigation.
         </Text>
       </View>
 
-      <FlatList
-        className="mt-6"
-        data={FLOW_ITEMS}
-        keyExtractor={(item) => item.id}
+      <AnimatedScrollView
+        ref={scrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: sidePadding }}
-        ItemSeparatorComponent={() => <View style={{ width: itemGap }} />}
-        snapToAlignment="center"
-        snapToInterval={snapInterval}
-        decelerationRate="fast"
         bounces={false}
-        renderItem={({ item }) => (
-          <View
-            className="h-[400px] rounded-3xl border border-white/12 bg-card p-6"
-            style={{ width: cardWidth }}
-          >
-            <View className="absolute inset-0 rounded-3xl border border-white/5" />
-            <Text className="text-sm font-semibold uppercase tracking-widest text-white/60">
-              {item.timeRange}
-            </Text>
-            <Text className="mt-3 text-2xl font-bold text-white">{item.title}</Text>
+        className="mt-5"
+        contentContainerStyle={{ paddingHorizontal: sidePadding }}
+        snapToInterval={snapInterval}
+        snapToAlignment="center"
+        decelerationRate="fast"
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+      >
+        {FLOW_ITEMS.map((item, index) => (
+          <FlowCard
+            key={item.id}
+            item={item}
+            index={index}
+            cardWidth={cardWidth}
+            snapInterval={snapInterval}
+            scrollX={scrollX}
+            onPress={openFullscreen}
+          />
+        ))}
+      </AnimatedScrollView>
 
-            <View className="mt-6 rounded-2xl bg-dark/60 p-4">
-              <Text className="text-xs font-semibold uppercase tracking-widest text-white/50">
-                AI Suggestions
-              </Text>
-              <Text className="mt-2 text-sm leading-6 text-white/80">
-                {item.suggestion}
-              </Text>
-            </View>
-          </View>
-        )}
+      <View className="mt-4">
+        <FlowSlider
+          scrollX={scrollX}
+          maxScroll={maxScroll}
+          onSeek={onSeek}
+        />
+      </View>
+
+      <View
+        className="mx-4 mt-4 flex-row items-center gap-3 overflow-hidden rounded-full border border-white/20 bg-white/10 px-4 py-3"
+        style={{ marginBottom: insets.bottom + 60 }}
+      >
+        <View className="rounded-full bg-brand/20 p-1.5">
+          <Sparkles size={15} color="#FF7A00" />
+        </View>
+        <Text className="flex-1 text-sm text-white/90">Ask AI or log something in your flow...</Text>
+      </View>
+
+      <FlowFullscreenOverlay
+        item={selectedCard?.item ?? null}
+        imageUri={selectedCard?.imageUri ?? ""}
+        origin={selectedOrigin}
+        onClosed={() => {
+          setSelectedCard(null);
+          setSelectedOrigin(null);
+        }}
       />
     </View>
   );

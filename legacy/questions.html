@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to FitFlow</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="./fontawesome-free-6.7.1-web/css/all.css">
+
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <style>
+        :root {
+            --deep-black: #0f0f0f;
+            --dark-grey: #333333;
+            --bright-yellow: #f2c464;
+            --light-grey: #f2f2f2;
+            --white: #ffffff;
+            --warm-beige: #c9bbaa;
+            --secondary-text-color: #bbbbbb;
+            --accent-hover-color: #d9ad4e;
+            --button-text-color: var(--deep-black);
+            --border-color: #555555;
+            --focus-ring-color: rgba(242, 196, 100, 0.3);
+            --placeholder-color: #888888;
+            --checked-highlight-bg: rgba(242, 196, 100, 0.1);
+            --font-family: "Manrope", sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            background-color: var(--deep-black);
+            color: var(--white);
+            font-family: var(--font-family);
+            min-height: 100vh;
+            padding: 20px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 0 12px;
+            text-align: center;
+        }
+
+        #welcome-screen {
+             width: 100%;
+             display: flex;
+             flex-direction: column;
+             align-items: center;
+             gap: 20px;
+        }
+
+        #welcome-screen h1 {
+            font-size: 24px;
+            font-weight: 800;
+            text-align: center;
+            margin-top: 32px;
+            margin-bottom: 0;
+             color: var(--white);
+        }
+
+        #welcome-screen .intro {
+            font-size: 15px;
+            line-height: 1.5;
+            text-align: center;
+            color: var(--light-grey);
+            max-width: 320px;
+            margin: 0 auto;
+        }
+
+        #welcome-screen .setup-options {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin: 16px 0;
+            width: 100%;
+        }
+
+        #welcome-screen .card {
+            background-color: var(--dark-grey);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-align: left;
+            border: 2px solid transparent;
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        #welcome-screen .card.dimmed {
+            opacity: 0.6;
+            transform: scale(1);
+             border-color: transparent;
+        }
+        #welcome-screen .card.selected {
+            opacity: 1;
+            transform: scale(1.03);
+            border: 2px solid var(--bright-yellow);
+        }
+
+        #welcome-screen .card .icon {
+            font-size: 24px;
+            color: var(--bright-yellow);
+            margin-bottom: 12px;
+        }
+
+        #welcome-screen .card h2 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: var(--bright-yellow);
+             font-weight: 600;
+        }
+
+        #welcome-screen .card p {
+            font-size: 14px;
+            color: var(--light-grey);
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        #welcome-screen .card .time {
+            font-size: 13px;
+            color: var(--warm-beige);
+        }
+
+        #welcome-screen .continue-btn {
+            background-color: var(--bright-yellow);
+            color: var(--deep-black);
+            border: none;
+            border-radius: 10px;
+            padding: 14px 24px;
+            font-size: 16px;
+            font-family: var(--font-family);
+            font-weight: 600;
+            margin-top: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+             display: block;
+        }
+        #welcome-screen .continue-btn:hover {
+            background-color: var(--accent-hover-color);
+         }
+        #welcome-screen .continue-btn:active {
+             transform: scale(0.97);
+         }
+
+        #welcome-screen .skip-link {
+            color: var(--light-grey);
+            text-decoration: none;
+            text-align: center;
+            padding: 10px;
+            font-size: 13px;
+            margin-top: 8px;
+            opacity: 0.8;
+            transition: all 0.3s ease;
+        }
+         #welcome-screen .skip-link:hover {
+            opacity: 1;
+            color: var(--bright-yellow);
+         }
+          #welcome-screen .skip-link:active {
+             transform: scale(0.95);
+         }
+
+        #question-area, #completion-screen {
+            display: none;
+        }
+        #question-area.visible, #completion-screen.visible {
+            display: block;
+            width: 100%;
+        }
+        .hidden {
+             display: none !important;
+        }
+
+        .progress-container {
+            width: 100%;
+            margin-bottom: 2.5em;
+            padding: 0 10px;
+        }
+        .progress-bar-bg {
+            background-color: var(--dark-grey);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        .progress-bar-fill {
+            width: 0%;
+            height: 100%;
+            background-color: var(--bright-yellow);
+            border-radius: 4px;
+            transition: width 0.4s ease-in-out;
+        }
+        .progress-text {
+            font-size: 0.9rem;
+            color: var(--light-grey);
+            text-align: center;
+        }
+
+        #question-area {
+            width: 100%;
+            text-align: left;
+        }
+        #question-content {
+            min-height: 200px;
+            margin-bottom: 2em;
+            opacity: 1;
+            transition: opacity 0.3s ease-in-out;
+            padding: 0 10px;
+        }
+        #question-content.fade-out { opacity: 0; }
+        #question-content h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1em;
+            color: var(--white);
+            line-height: 1.3;
+        }
+        #question-content p.description {
+            font-size: 0.95rem;
+            color: var(--light-grey);
+            margin-bottom: 1.5em;
+        }
+        .optional-tag {
+            font-size: 0.8em;
+            color: var(--warm-beige);
+            font-weight: 300;
+            margin-left: 5px;
+        }
+
+        .form-group { margin-bottom: 1.5em; }
+        .form-group label:not(.sr-only) {
+            display: block; font-size: 0.9rem; color: var(--light-grey); margin-bottom: 0.5em; font-weight: 400;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="date"],
+        .form-group input[type="number"],
+        .form-group textarea,
+        .form-group select {
+            width: 100%; padding: 12px 15px; background-color: var(--dark-grey);
+            border: 1px solid #555555; border-radius: 8px; color: var(--white);
+            font-size: 1rem; font-family: var(--font-family); transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .form-group textarea {
+            min-height: 80px;
+             line-height: 1.5;
+        }
+        .form-group input::placeholder,
+        .form-group textarea::placeholder { color: var(--placeholder-color); }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none; border-color: var(--bright-yellow);
+            box-shadow: 0 0 0 2px var(--focus-ring-color);
+        }
+        .form-group.has-error input,
+        .form-group.has-error select,
+        .form-group.has-error textarea,
+        .form-group.has-error .radio-option,
+        .form-group.has-error .checkbox-option {
+            border-color: #e74c3c !important;
+        }
+        .form-group .error-message {
+            color: #e74c3c; font-size: 0.85rem; margin-top: 5px; min-height: 1em; display: block;
+        }
+        .form-group:not(.has-error) .error-message { display: none; }
+
+        .radio-group, .checkbox-group { display: flex; flex-direction: column; gap: 10px; }
+        .radio-option, .checkbox-option {
+            display: flex; align-items: center; background-color: var(--dark-grey);
+            padding: 15px; border-radius: 8px; border: 1px solid #555555;
+            cursor: pointer; transition: border-color 0.3s ease, background-color 0.3s ease; position: relative;
+        }
+        .radio-option input[type="radio"], .checkbox-option input[type="checkbox"] {
+            opacity: 0; position: absolute; width: 1px; height: 1px;
+        }
+        .radio-option label, .checkbox-option label {
+            flex-grow: 1; margin-left: 30px; margin-bottom: 0; color: var(--white);
+            font-weight: 400; pointer-events: none; position: relative; z-index: 0;
+        }
+        .radio-option label::before, .checkbox-option label::before {
+            content: ''; width: 20px; height: 20px; border: 2px solid #bbbbbb;
+            border-radius: 50%; position: absolute; left: -30px; top: 50%; transform: translateY(-50%);
+            transition: border-color 0.3s ease, background-color 0.3s ease; background-color: var(--deep-black);
+            box-sizing: border-box;
+        }
+        .checkbox-option label::before { border-radius: 4px; }
+
+        .radio-option input[type="radio"]:checked + label::before,
+        .checkbox-option input[type="checkbox"]:checked + label::before {
+            border-color: var(--bright-yellow); background-color: var(--bright-yellow);
+        }
+        .radio-option:has(input[type="radio"]:checked),
+        .checkbox-option:has(input[type="checkbox"]:checked) {
+            border-color: var(--bright-yellow);
+            background-color: var(--checked-highlight-bg);
+        }
+        .checkbox-option input[type="checkbox"]:checked + label::after {
+            content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
+            color: var(--deep-black); position: absolute; left: -26px; top: 50%;
+            transform: translateY(-50%); font-size: 12px; text-align: center; line-height: 1;
+        }
+        .radio-option:hover, .checkbox-option:hover { border-color: #777777; }
+        .radio-option:hover label::before, .checkbox-option:hover label::before { border-color: #cccccc; }
+
+        .input-group { display: flex; gap: 10px; align-items: stretch; }
+        .input-group input { flex-grow: 1; }
+        .input-group select { flex-shrink: 0; width: auto; min-width: 80px; }
+
+        .navigation-buttons {
+            display: flex; justify-content: space-between; margin-top: 2em; padding: 0 10px; width: 100%;
+        }
+        .navigation-buttons .btn {
+             background-color: var(--bright-yellow);
+             color: var(--deep-black);
+             border: none;
+             padding: 12px 25px;
+             font-family: var(--font-family);
+             font-size: 0.95rem;
+             font-weight: 600;
+             border-radius: 50px;
+             cursor: pointer;
+             text-align: center;
+             transition: background-color 0.3s ease, transform 0.2s ease;
+             text-decoration: none;
+             z-index: 1;
+             position: relative;
+         }
+          .navigation-buttons .btn:hover {
+             background-color: var(--accent-hover-color);
+             transform: translateY(-2px);
+         }
+           .navigation-buttons .btn:active {
+              transform: translateY(0);
+         }
+        .navigation-buttons .btn-secondary {
+            background-color: var(--dark-grey);
+            color: var(--light-grey);
+            border: 1px solid #555555;
+        }
+        .navigation-buttons .btn-secondary:hover {
+            background-color: #444444;
+            color: var(--white);
+             border-color: #777777;
+             transform: translateY(-2px);
+        }
+        #back-btn.hidden { visibility: hidden; }
+
+        #completion-screen {
+            text-align: center; padding-top: 3em; opacity: 1; transition: opacity 0.5s ease-in;
+             width: 100%;
+        }
+        #completion-screen .completion-icon {
+            font-size: 4rem; color: var(--bright-yellow); margin-bottom: 0.5em;
+            animation: tada 1.5s ease-out;
+        }
+        #completion-screen h2 {
+            font-size: 2rem; margin-bottom: 0.5em; color: var(--white);
+        }
+        #completion-screen p {
+            font-size: 1.1rem; color: var(--light-grey); margin-bottom: 2em;
+            max-width: 450px; margin-left: auto; margin-right: auto;
+        }
+        #completion-screen #finish-btn {
+            margin-top: 1em;
+            display: inline-block;
+            background-color: var(--bright-yellow);
+            color: var(--deep-black);
+            border: none;
+            padding: 12px 25px;
+            font-family: var(--font-family);
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            text-decoration: none;
+            z-index: 1;
+            position: relative;
+         }
+         #completion-screen #finish-btn:hover {
+             background-color: var(--accent-hover-color);
+             transform: translateY(-2px);
+         }
+           #completion-screen #finish-btn:active {
+              transform: translateY(0);
+         }
+         @keyframes tada {
+             0% {transform: scale(1);} 10%, 20% {transform: scale(0.9) rotate(-3deg);}
+             30%, 50%, 70%, 90% {transform: scale(1.1) rotate(3deg);} 40%, 60%, 80% {transform: scale(1.1) rotate(-3deg);}
+             100% {transform: scale(1) rotate(0);}
+         }
+          .sr-only {
+             position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+             overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;
+        }
+        #limitations_section {
+            margin-top: 15px;
+            border-left: 3px solid var(--bright-yellow);
+            padding-left: 15px;
+            transition: opacity 0.3s ease, max-height 0.4s ease;
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+        }
+        #limitations_section.visible {
+             max-height: 300px;
+             opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <div id="welcome-screen">
+             <h1>Welcome to FitFlow</h1>
+             <p class="intro">Let's personalize your fitness plan for the best results. Choose your setup path:</p>
+
+             <div class="setup-options">
+                 <div class="card" id="quick-path-card" data-path="quick">
+                     <i class="fas fa-bolt icon"></i>
+                     <h2>Quick Setup</h2>
+                     <p>Answer 5 key questions for a foundational plan.</p>
+                     <span class="time">(~1 min)</span>
+                 </div>
+                 <div class="card" id="detailed-path-card" data-path="detailed">
+                      <i class="fas fa-sliders icon"></i>
+                     <h2>Full Personalization</h2>
+                     <p>Explore 5 areas for a deeply tailored strategy.</p>
+                     <span class="time">(~5-7 min)</span>
+                 </div>
+             </div>
+
+             <button class="continue-btn" id="welcome-continue-btn">Continue</button>
+
+              <a href="#" class="skip-link" id="skip-initial">Skip for now</a>
+        </div>
+
+        <div id="question-area" class="hidden">
+            <div class="progress-container">
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progress-bar"></div>
+                </div>
+                <div class="progress-text" id="progress-text">Step 1 of 5</div>
+            </div>
+
+            <div id="question-content">
+
+            </div>
+
+            <div class="navigation-buttons">
+                <button class="btn btn-secondary hidden" id="back-btn">Back</button>
+                <button class="btn" id="next-btn">Next</button>
+            </div>
+        </div>
+
+         <div id="completion-screen" class="hidden">
+            <div class="completion-icon"><i class="fa-solid fa-party-popper"></i></div>
+             <h2>Setup Complete!</h2>
+             <p>Thanks, <span id="user-name-placeholder">[Name]</span>! We're creating your personalized FitFlow experience.</p>
+             <button class="btn" id="finish-btn">Let's Go!</button>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const welcomeScreen = document.getElementById('welcome-screen');
+            const questionArea = document.getElementById('question-area');
+            const completionScreen = document.getElementById('completion-screen');
+            const setupOptionsCards = welcomeScreen.querySelectorAll('.card');
+            const welcomeContinueBtn = document.getElementById('welcome-continue-btn');
+            const initialSkipLink = document.getElementById('skip-initial');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const questionContent = document.getElementById('question-content');
+            const backBtn = document.getElementById('back-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const finishBtn = document.getElementById('finish-btn');
+            const userNamePlaceholder = document.getElementById('user-name-placeholder');
+
+            let currentPath = null;
+            let currentQuestionIndex = 0;
+            let questions = [];
+            let userAnswers = {};
+             let selectedPath = null;
+
+            const quickQuestions = [
+                { id: 'primary_goal_q', type: 'radio', text: "What is your primary fitness goal?", options: ['Weight loss', 'Muscle gain', 'Endurance', 'Flexibility', 'General health'], required: true },
+                { id: 'activity_level_q', type: 'radio', text: "How would you describe your current activity level?", options: ['Just starting out / Sedentary', 'Lightly active (exercise 1-2x/week)', 'Moderately active (exercise 3-4x/week)', 'Very active (exercise 5+x/week)'], required: true },
+                { id: 'workout_duration_q', type: 'radio', text: "How long are you willing to commit per workout?", options: ['15-30 minutes', '30-45 minutes', '45-60 minutes', '60+ minutes'], required: true },
+                { id: 'workout_environment_q', type: 'radio', text: "Where will you primarily work out?", options: ['At Home (mainly bodyweight/minimal equip)', 'At Home (with some equipment)', 'At a Gym'], required: true },
+                { id: 'health_check_q', type: 'radio', text: "Do you have any significant health conditions or recent injuries?", description: "This helps us tailor intensity safely. Consult a doctor if unsure.", options: ['No known issues', 'Yes, some limitations'], required: true }
+            ];
+
+             const detailedQuestions = [
+                 { id: 'full_name', group: 'Profile Basics', type: 'text', text: "What's your preferred name?", required: true },
+                 { id: 'dob', group: 'Profile Basics', type: 'date', text: "What is your date of birth?", required: true },
+                 { id: 'gender', group: 'Profile Basics', type: 'select', text: "What is your gender?", options: ['Select...', 'Male', 'Female'], required: true },
+                 { id: 'primary_goal_d', group: 'Goals & Metrics', type: 'radio', text: "What is your primary fitness goal?", options: ['Weight loss', 'Muscle gain', 'Improve endurance', 'Increase flexibility', 'Improve strength', 'General health & wellness', 'Body recomposition (lose fat, gain muscle)', 'Sport-specific training', 'Other'], required: true },
+                 { id: 'secondary_goal_d', group: 'Goals & Metrics', type: 'checkbox', text: "Any secondary goals? (Optional, select all that apply)", options: ['Improve posture', 'Increase energy levels', 'Reduce stress', 'Better sleep', 'Learn new skills (e.g., handstand)'], optional: true },
+                 { id: 'goal_motivation', group: 'Goals & Metrics', type: 'select', text: "What's driving your motivation?", options: ['Select...', 'Improve health', 'Look better / Aesthetics', 'Feel stronger / more capable', 'Boost confidence', 'Prepare for an event', 'Doctor recommendation', 'Stress relief', 'Other'], required: true },
+                 { id: 'training_event', group: 'Goals & Metrics', type: 'radio', text: "Are you training for a specific event?", options: ['Yes', 'No'], required: true },
+                 { id: 'event_details', group: 'Goals & Metrics', type: 'text', text: "If yes, what event and when?", dependsOn: 'training_event', showIf: 'Yes', optional: true, placeholder:"e.g., Marathon in October"},
+                 { id: 'height', group: 'Goals & Metrics', type: 'number_unit', text: "What is your height?", units: ['cm', 'inches'], required: true },
+                 { id: 'current_weight', group: 'Goals & Metrics', type: 'number_unit', text: "What is your current weight?", units: ['kg', 'lbs'], required: true },
+                 { id: 'goal_weight', group: 'Goals & Metrics', type: 'number_unit', text: "Do you have a goal weight? (Optional)", units: ['kg', 'lbs'], optional: true },
+                 { id: 'target_body_fat', group: 'Goals & Metrics', type: 'number', text: "Target body fat percentage? (Optional, %)", optional: true, min: 3, max: 50 },
+                 { id: 'activity_level_d', group: 'Activity & Experience', type: 'radio', text: "How active are you currently?", options: ['Sedentary (mostly sitting)', 'Lightly active (light walk/activity 1-2 days/wk)', 'Moderately active (exercise 3-4 days/wk)', 'Very active (intense exercise 5+ days/wk)', 'Extremely active (physically demanding job + exercise)'], required: true },
+                 { id: 'workout_frequency', group: 'Activity & Experience', type: 'select', text: "Ideally, how many days per week can you dedicate to workouts?", options: ['Select...','1-2 days', '3 days', '4 days', '5 days', '6 days', '7 days'], required: true },
+                 { id: 'workout_types', group: 'Activity & Experience', type: 'checkbox', text: "What types of workouts do you enjoy or want to do?", options: ['Cardio (running, cycling)', 'Weight lifting', 'Bodyweight training', 'Yoga / Pilates', 'HIIT (High-Intensity Interval Training)', 'Team sports', 'Swimming', 'Dancing', 'Other'], required: true },
+                 { id: 'workout_duration_pref', group: 'Activity & Experience', type: 'radio', text: "How long do your workouts usually last?", options: ['Under 30 min', '30-45 min', '45-60 min', '60-90 min', '90+ min'], required: true },
+                 { id: 'workout_commit_duration', group: 'Activity & Experience', type: 'radio', text: "Realistically, how long can you commit per session now?", options: ['15-30 min', '30-45 min', '45-60 min', '60-90 min', '90+ min'], required: true },
+                 { id: 'gym_experience', group: 'Activity & Experience', type: 'radio', text: "Do you have experience using standard gym equipment?", options: ['None / Very little', 'Some experience', 'Comfortable / Experienced'], required: true },
+                 { id: 'follow_plans', group: 'Activity & Experience', type: 'radio', text: "Are you comfortable following structured workout plans?", options: ['Yes, I prefer structure', 'Yes, but I like flexibility', 'Not really, I prefer to improvise', "I'm new to this"], required: true },
+                 { id: 'strength_level', group: 'Activity & Experience', type: 'select', text: "How would you rate your current strength level?", options: ['Select...', 'Beginner (learning basic movements)', 'Intermediate (comfortable with weights)', 'Advanced (lifting heavy/complex moves)'], required: true },
+                 { id: 'cardio_level', group: 'Activity & Experience', type: 'select', text: "How would you rate your cardiovascular endurance?", options: ['Select...', 'Poor (get breathless easily)', 'Average (can sustain moderate activity)', 'Good (can sustain longer/intense activity)', 'Excellent (high endurance)'], required: true },
+                 { id: 'workout_time_pref', group: 'Activity & Experience', type: 'select', text: "Preferred time to work out?", options: ['Select...', 'Early Morning (before 8am)', 'Morning (8am - 12pm)', 'Afternoon (12pm - 5pm)', 'Evening (5pm - 9pm)', 'Late Night (after 9pm)', 'Flexible / Varies'], required: true },
+                 { id: 'medical_conditions', group: 'Health & Preferences', type: 'checkbox', text: "Any pre-existing medical conditions? (Select all)", description: "Select 'None known' if applicable.", options: ['None known', 'Diabetes (Type 1/2)', 'High blood pressure', 'Heart condition', 'Arthritis', 'Back pain (chronic)', 'Other (consult doctor)'], required: true },
+                 { id: 'past_injuries', group: 'Health & Preferences', type: 'checkbox', text: "Any significant past injuries?", description: "Select 'None' if applicable.", options: ['None', 'Shoulder', 'Knee', 'Back', 'Ankle/Foot', 'Wrist/Elbow', 'Other'], required: true },
+                 { id: 'joint_mobility', group: 'Health & Preferences', type: 'radio', text: "Do you experience frequent joint pain or mobility issues?", options: ['No', 'Yes, mild', 'Yes, significant'], required: true },
+                 { id: 'breathing_issues', group: 'Health & Preferences', type: 'radio', text: "Do you have asthma or other breathing conditions?", options: ['No', 'Yes, mild/controlled', 'Yes, requires caution'], required: true },
+                 { id: 'workout_location_d', group: 'Health & Preferences', type: 'radio', text: "Where do you prefer working out?", options: ['Home', 'Gym', 'Outdoors', 'Mix'], required: true },
+                 { id: 'equipment_access', group: 'Health & Preferences', type: 'checkbox', text: "What equipment do you reliably have access to?", description:"Select all that apply.", dependsOn:'workout_location_d', conditionLogic: 'value === "Gym" || value === "Mix"', options: ['Basic Gym (cardio, machines, free weights)', 'Full Gym (incl. squat racks, specialized equip.)'], optional: true},
+                 { id: 'home_equipment_access', group: 'Health & Preferences', type: 'checkbox', text: "What equipment do you have at home?", description:"Select all that apply.", dependsOn:'workout_location_d', conditionLogic: 'value === "Home" || value === "Mix"', options: ['Dumbbells', 'Resistance Bands', 'Kettlebell', 'Pull-up Bar', 'Yoga Mat', 'Bodyweight Only'], required: true, dependsOnLogic: true},
+                 { id: 'exercise_preference', group: 'Health & Preferences', type: 'radio', text: "Prefer bodyweight or weighted exercises?", options: ['Mainly bodyweight', 'Good mix of both', 'Mainly weighted'], required: true },
+                 { id: 'intensity_preference', group: 'Health & Preferences', type: 'radio', text: "Workout intensity preference?", options: ['Low intensity / Steady pace', 'Moderate intensity', 'High intensity (HIIT)', 'Varies depending on mood/day'], required: true },
+                 { id: 'food_allergies', group: 'Nutrition & AI', type: 'checkbox', text: "Any food allergies or intolerances?", description: "Select 'None' if applicable.", options: ['None', 'Dairy', 'Gluten', 'Nuts', 'Soy', 'Eggs', 'Seafood', 'Other'], required: true },
+                 { id: 'food_dislikes', group: 'Nutrition & AI', type: 'text', text: "Specific foods you strongly dislike or avoid? (Optional)", optional: true, placeholder: "e.g., Mushrooms, spicy food, red meat" },
+                 { id: 'supplements', group: 'Nutrition & AI', type: 'checkbox', text: "Do you currently take any supplements?", description: "Select 'None' if applicable.", options: ['None', 'Protein powder', 'Creatine', 'Multivitamin', 'Omega-3 / Fish Oil', 'Pre-workout', 'Other'], required: true },
+                 { id: 'food_budget', group: 'Nutrition & AI', type: 'select', text: "Rough monthly budget for groceries/food? (Optional)", optional: true, options: ['Select...', '< $200', '$200 - $400', '$400 - $600', '$600 - $800', '> $800', 'Prefer not to say'] },
+                 { id: 'diet_consistency', group: 'Nutrition & AI', type: 'radio', text: "How consistent are you typically with your diet?", options: ['Very consistent', 'Mostly consistent', 'Struggle with consistency', 'Just starting to focus on diet'], required: true },
+                 { id: 'ai_behavior', group: 'Nutrition & AI', type: 'select', text: "Any preferences for the AI coach behavior?", options: ['Select...', 'Standard helpful AI', 'Always provide workout videos', 'Give frequent check-ins/motivation', 'Focus more on data/stats', 'Provide detailed explanations'], required: true },
+                 { id: 'ai_tone', group: 'Nutrition & AI', type: 'radio', text: "Prefer a formal or casual AI tone?", options: ['Formal & direct', 'Encouraging & friendly (Casual)', 'Mix of both'], required: true },
+             ];
+
+            const clearQuestionArea = () => { questionContent.innerHTML = ''; };
+            const getVisibleQuestionsCount = () => {
+                 let count = 0;
+                 let tempAnswers = {};
+                 questions.forEach(q => {
+                     if (q.dependsOn) {
+                         const dependencyValue = tempAnswers[q.dependsOn];
+                         if (isConditionMet(q, dependencyValue)) {
+                             count++;
+                             if (q.options && q.options.length > 0) tempAnswers[q.id] = q.options[0]; else tempAnswers[q.id] = 'simulated';
+                         }
+                     } else {
+                         count++;
+                         if (q.options && q.options.length > 0) tempAnswers[q.id] = q.options[0]; else tempAnswers[q.id] = 'simulated';
+                     }
+                 });
+                 return count > 0 ? count : questions.length;
+            };
+
+            const updateProgress = () => {
+                let visibleQuestionIndex = -1;
+                let visibleQuestionsSoFar = 0;
+                let tempAnswers = {};
+                 for (let i = 0; i < questions.length; i++) {
+                     const q = questions[i];
+                     let isVisible = true;
+                     if (q.dependsOn) {
+                         const dependencyValue = userAnswers[q.dependsOn] ?? tempAnswers[q.dependsOn];
+                         if (!isConditionMet(q, dependencyValue)) isVisible = false;
+                     }
+                     if (isVisible) {
+                         visibleQuestionsSoFar++;
+                         if (i === currentQuestionIndex) visibleQuestionIndex = visibleQuestionsSoFar;
+                         if(userAnswers[q.id] === undefined) {
+                             if (q.options && q.options.length > 0) tempAnswers[q.id] = q.options[0]; else tempAnswers[q.id] = 'simulated';
+                         }
+                     }
+                 }
+                 const totalVisibleSteps = getVisibleQuestionsCount();
+                 const currentVisibleStep = Math.max(1, visibleQuestionIndex);
+                 const progressPercent = totalVisibleSteps > 0 ? (currentVisibleStep / totalVisibleSteps) * 100 : 0;
+                 progressBar.style.width = `${progressPercent}%`;
+                 progressText.textContent = `Step ${currentVisibleStep} of ${totalVisibleSteps}`;
+                 backBtn.classList.toggle('hidden', currentQuestionIndex === 0);
+                 nextBtn.textContent = currentVisibleStep >= totalVisibleSteps ? 'Finish' : 'Next';
+            };
+
+            const isConditionMet = (question, dependencyValue) => {
+                 if (!question.dependsOn || dependencyValue === undefined) return !question.dependsOn;
+                 if (question.conditionLogic) {
+                     try {
+                         const safeDependencyValue = String(dependencyValue);
+                         let condition = question.conditionLogic.replace(/value/g, `"${safeDependencyValue}"`);
+                         if (/^"[^"]*"\s*(===|!==|==|!=)\s*"[^"]*"(\s*(\|\||&&)\s*"[^"]*"\s*(===|!==|==|!=)\s*"[^"]*")*$/.test(condition)) return eval(condition);
+                         console.warn("Unsupported conditionLogic format:", question.conditionLogic);
+                         return false;
+                     } catch (e) { console.error("Error evaluating conditionLogic:", e); return false; }
+                 } else if (question.showIf !== undefined) return String(dependencyValue) === String(question.showIf);
+                 return true;
+            };
+
+            const getQuestionValue = (question) => {
+                 const elements = questionContent.querySelectorAll(`[name="${question.id}"], [id="${question.id}"]`);
+                 if (!elements || elements.length === 0) {
+                     if(question.id === 'health_limitations_details') {
+                         const limitationsTextarea = questionContent.querySelector('#health_limitations_details');
+                         return limitationsTextarea ? limitationsTextarea.value : null;
+                     }
+                     return null;
+                 }
+                 switch (question.type) {
+                     case 'text': case 'date': case 'select': case 'number':
+                         return elements[0] ? elements[0].value : null;
+                     case 'number_unit':
+                         const numberInput = questionContent.querySelector(`input[name="${question.id}"]`);
+                         const unitSelect = questionContent.querySelector(`select[name="${question.id}_unit"]`);
+                         return (numberInput && unitSelect && numberInput.value !== '') ? { value: numberInput.value, unit: unitSelect.value } : (question.optional ? null : { value: '', unit: unitSelect?.value || question.units[0]});
+                     case 'radio':
+                         const checkedRadio = questionContent.querySelector(`input[name="${question.id}"]:checked`);
+                         return checkedRadio ? checkedRadio.value : null;
+                     case 'checkbox':
+                         const checkedBoxes = questionContent.querySelectorAll(`input[name="${question.id}"]:checked`);
+                         return Array.from(checkedBoxes).map(cb => cb.value);
+                     default:
+                         console.warn("Unknown question type in getQuestionValue:", question.type);
+                          if (question.id === 'health_limitations_details') {
+                            const limitationsTextarea = questionContent.querySelector('#health_limitations_details');
+                            return limitationsTextarea ? limitationsTextarea.value : null;
+                         }
+                        return null;
+                 }
+            };
+
+
+            const validateCurrentQuestion = () => {
+                 const question = questions[currentQuestionIndex];
+                 if (!question) return false;
+
+                 if (question.dependsOn && !isConditionMet(question, userAnswers[question.dependsOn])) return true;
+
+                 let isRequired = question.required;
+                 if (question.dependsOnLogic && question.required && question.dependsOn) {
+                     isRequired = isConditionMet(question, userAnswers[question.dependsOn]);
+                     if (!isRequired) return true;
+                 }
+                 if (!isRequired && question.optional && !(question.required && question.dependsOnLogic && isConditionMet(question, userAnswers[question.dependsOn]))) {
+                    return true;
+                 }
+                  if (!isRequired && !question.required) {
+                       return true;
+                  }
+
+
+                 let isValid = true;
+                 const value = getQuestionValue(question);
+                 const formGroup = questionContent.querySelector(`#q-${question.id}`)?.closest('.form-group') || questionContent.querySelector(`[name="${question.id}"]`)?.closest('.form-group');
+
+                 const removeError = (group) => {
+                    if(group) {
+                         group.classList.remove('has-error');
+                         const errorMsg = group.querySelector('.error-message');
+                         if (errorMsg) errorMsg.textContent = '';
+                    }
+                 };
+
+                 const setError = (group, message) => {
+                    isValid = false;
+                     console.warn("Validation Error:", question.id, message);
+                     if (group) {
+                         group.classList.add('has-error');
+                         const errorMsg = group.querySelector('.error-message');
+                         if (errorMsg) errorMsg.textContent = message;
+                         const firstInput = group.querySelector('input:not([type=hidden]), select, textarea');
+                         firstInput?.focus();
+                     } else { alert(message); }
+                     return false;
+                 };
+
+                 removeError(formGroup);
+
+                 if (value === null || value === undefined) {
+                     if (isRequired) setError(formGroup, "Please provide an answer.");
+                 } else if (question.type === 'checkbox') {
+                     if ((!Array.isArray(value) || value.length === 0) && isRequired) {
+                         if ((question.id === 'medical_conditions' || question.id === 'past_injuries' || question.id === 'food_allergies' || question.id === 'supplements')) { setError(formGroup, `Please select at least one option, or choose '${question.options[0]}'.`); }
+                         else { setError(formGroup, "Please select at least one option."); }
+                     } else if (Array.isArray(value) && value.length > 1 && value.includes(question.options[0]) && question.options[0].toLowerCase().includes('none')) {
+                         setError(formGroup, `If you select '${question.options[0]}', please uncheck other options.`);
+                     }
+                 } else if (question.type === 'number_unit') {
+                     if (isRequired && (!value || value.value === '' || isNaN(parseFloat(value.value)))) {
+                        setError(formGroup, "Please enter a valid number.");
+                     } else if (value && value.value !== '' && !isNaN(parseFloat(value.value))) {
+                         if(question.min !== undefined && parseFloat(value.value) < question.min) setError(formGroup, `Value must be at least ${question.min}.`);
+                         if(question.max !== undefined && parseFloat(value.value) > question.max) setError(formGroup, `Value cannot exceed ${question.max}.`);
+                     }
+                 } else if (question.type === 'number') {
+                      if (isRequired && (value === '' || isNaN(parseFloat(value)))) {
+                           setError(formGroup, "Please enter a valid number.");
+                      } else if (value !== '' && !isNaN(parseFloat(value))) {
+                          if(question.min !== undefined && parseFloat(value) < question.min) setError(formGroup, `Value must be at least ${question.min}.`);
+                          if(question.max !== undefined && parseFloat(value) > question.max) setError(formGroup, `Value cannot exceed ${question.max}.`);
+                      }
+                 } else if (question.type === 'select' && (value === '' || value === 'Select...') && isRequired) {
+                     setError(formGroup, "Please make a selection.");
+                 } else if (typeof value === 'string' && value.trim() === '' && isRequired) {
+                     setError(formGroup, "This field cannot be empty.");
+                 }
+
+
+                if (isValid && question.id === 'health_check_q') {
+                    const selectedRadioValue = value;
+                    if (selectedRadioValue === 'Yes, some limitations') {
+                        const limitationsTextarea = questionContent.querySelector('#health_limitations_details');
+                        const limitationsFormGroup = limitationsTextarea ? limitationsTextarea.closest('.form-group') : null;
+
+                        const removeLimitationsError = () => {
+                            if (limitationsFormGroup) {
+                                limitationsFormGroup.classList.remove('has-error');
+                                const errorMsg = limitationsFormGroup.querySelector('.error-message');
+                                if (errorMsg) errorMsg.textContent = '';
+                            }
+                        };
+                        const setLimitationsError = (message) => {
+                             if (limitationsFormGroup) {
+                                limitationsFormGroup.classList.add('has-error');
+                                const errorMsg = limitationsFormGroup.querySelector('.error-message');
+                                if (errorMsg) errorMsg.textContent = message;
+                                limitationsTextarea?.focus();
+                                isValid = false;
+                                console.warn("Validation Error: health_limitations_details -", message);
+                             } else {
+                                 alert(message);
+                                 isValid = false;
+                                 console.warn("Validation Error: health_limitations_details -", message, "(No form group found)");
+                             }
+                        };
+
+                        removeLimitationsError();
+
+                        if (!limitationsTextarea || limitationsTextarea.value.trim() === '') {
+                            setLimitationsError("Please describe your limitations when selecting 'Yes'.");
+                        }
+                    }
+                }
+
+                 return isValid;
+            };
+
+            const errorStyle = document.createElement('style');
+            errorStyle.textContent = ` .form-group.has-error input, .form-group.has-error select, .form-group.has-error textarea, .form-group.has-error .radio-option, .form-group.has-error .checkbox-option { border-color: #e74c3c !important; } .form-group .error-message { color: #e74c3c; font-size: 0.85rem; margin-top: 5px; min-height: 1em; display: block; } .form-group:not(.has-error) .error-message { display: none; }`;
+            document.head.appendChild(errorStyle);
+
+            const renderQuestion = (index) => {
+                 questionContent.classList.add('fade-out');
+                 setTimeout(() => {
+                    clearQuestionArea();
+                    if (index < 0 || index >= questions.length) { if(index >= questions.length) showCompletionScreen(); else welcomeScreen.classList.remove('hidden'); return; }
+                    const question = questions[index];
+                    if (!question) { console.error("Question definition not found for index:", index); return; }
+                    if (question.dependsOn) {
+                         const dependencyValue = userAnswers[question.dependsOn];
+                         if (!isConditionMet(question, dependencyValue)) {
+                              const intendedDirection = index > currentQuestionIndex ? 1 : (index < currentQuestionIndex ? -1 : 1);
+                              currentQuestionIndex = index;
+                              navigateQuestions(intendedDirection);
+                              return;
+                         }
+                    }
+                    currentQuestionIndex = index;
+                    let isRequired = question.required;
+                    let isConditionallyRequired = false;
+                    if (question.dependsOnLogic && question.required && question.dependsOn) {
+                         isRequired = isConditionMet(question, userAnswers[question.dependsOn]);
+                         isConditionallyRequired = true;
+                     }
+                    const displayRequiredTag = (isRequired && !question.optional) || (isConditionallyRequired && isRequired);
+                    let html = `<div class="form-group" id="q-${question.id}">`;
+                    html += `<h3 id="label-${question.id}">${question.text}${!displayRequiredTag ? ' <small class="optional-tag">(Optional)</small>' : ''}</h3>`;
+                    if(question.description) html += `<p class="description">${question.description}</p>`;
+                    const requiredAttr = displayRequiredTag ? 'required' : '';
+                    switch (question.type) {
+                         case 'text': case 'date': case 'number':
+                              html += `<div><label for="${question.id}" class="sr-only">${question.text}</label><input type="${question.type}" id="${question.id}" name="${question.id}" placeholder="${question.placeholder || ''}" ${question.min ? `min="${question.min}"` : ''} ${question.max ? `max="${question.max}"` : ''} ${requiredAttr}><div class="error-message"></div></div>`; break;
+                         case 'number_unit':
+                              html += `<div class="input-group"><label for="${question.id}" class="sr-only">${question.text}</label><input type="number" id="${question.id}" name="${question.id}" placeholder="Enter value" ${requiredAttr} ${question.min ? `min="${question.min}"` : ''} ${question.max ? `max="${question.max}"` : ''}><select name="${question.id}_unit" aria-label="Unit for ${question.text}">${question.units.map(unit => `<option value="${unit}">${unit}</option>`).join('')}</select></div><div class="error-message"></div>`; break;
+                         case 'select':
+                              html += `<div><label for="${question.id}" class="sr-only">${question.text}</label><select id="${question.id}" name="${question.id}" ${requiredAttr}>${question.options.map((opt, i) => `<option value="${opt === 'Select...' ? '' : opt}" ${i === 0 ? 'disabled' : ''} ${i === 0 ? 'selected' : ''}>${opt}</option>`).join('')}</select><div class="error-message"></div></div>`; break;
+                         case 'radio':
+                             html += `<div class="radio-group" role="radiogroup" aria-labelledby="label-${question.id}">`;
+                              question.options.forEach((opt, i) => { const optId = `${question.id}_${i}`; html += `<div class="radio-option"><input type="radio" id="${optId}" name="${question.id}" value="${opt}" ${requiredAttr}><label for="${optId}">${opt}</label></div>`; });
+                             html += `</div><div class="error-message"></div>`;
+
+                              if (question.id === 'health_check_q') {
+                                 html += `<div id="limitations_section">`;
+                                 html += `<div class="form-group">`;
+                                 html += `<label for="health_limitations_details">Please describe your limitations:</label>`;
+                                 html += `<textarea id="health_limitations_details" name="health_limitations_details" placeholder="Describe any conditions, injuries, or doctor's advice here..."></textarea>`;
+                                 html += `<div class="error-message"></div>`;
+                                 html += `</div>`;
+                                 html += `</div>`;
+                             }
+                             break;
+                         case 'checkbox':
+                             html += `<div class="checkbox-group" role="group" aria-labelledby="label-${question.id}">`;
+                              question.options.forEach((opt, i) => { const optId = `${question.id}_${i}`; html += `<div class="checkbox-option"><input type="checkbox" id="${optId}" name="${question.id}" value="${opt}"><label for="${optId}">${opt}</label></div>`; });
+                             html += `</div><div class="error-message"></div>`; break;
+                          case 'textarea':
+                             html += `<div><label for="${question.id}" class="sr-only">${question.text}</label><textarea id="${question.id}" name="${question.id}" placeholder="${question.placeholder || 'Describe here...'}" ${requiredAttr}></textarea><div class="error-message"></div></div>`; break;
+
+                    }
+                    html += `</div>`;
+                    questionContent.innerHTML = html;
+                    const existingAnswer = userAnswers[question.id];
+                    if (existingAnswer !== undefined && existingAnswer !== null) {
+                         const inputElement = questionContent.querySelector(`[name="${question.id}"]`);
+                         if (question.type === 'radio') { const radioToSelect = questionContent.querySelector(`input[name="${question.id}"][value="${existingAnswer}"]`); if(radioToSelect) radioToSelect.checked = true; }
+                         else if (question.type === 'checkbox' && Array.isArray(existingAnswer)) { existingAnswer.forEach(val => { const checkboxToSelect = questionContent.querySelector(`input[name="${question.id}"][value="${val}"]`); if (checkboxToSelect) checkboxToSelect.checked = true; }); }
+                         else if (question.type === 'number_unit' && typeof existingAnswer === 'object' && existingAnswer.value !== undefined) { const numberInput = questionContent.querySelector(`input[name="${question.id}"]`); const unitSelect = questionContent.querySelector(`select[name="${question.id}_unit"]`); if (numberInput) numberInput.value = existingAnswer.value; if (unitSelect) unitSelect.value = existingAnswer.unit || question.units[0]; }
+                         else if (inputElement && existingAnswer !== undefined) { inputElement.value = existingAnswer; }
+                    }
+
+                     const setupConditionalTextarea = () => {
+                        if (question.id === 'health_check_q') {
+                            const radioButtons = questionContent.querySelectorAll(`input[name="health_check_q"]`);
+                            const limitationsSection = questionContent.querySelector('#limitations_section');
+                            const limitationsTextarea = questionContent.querySelector('#health_limitations_details');
+                            const limitationsFormGroup = limitationsSection ? limitationsSection.querySelector('.form-group') : null;
+
+                             const toggleLimitations = (show) => {
+                                 if (limitationsSection) {
+                                      limitationsSection.classList.toggle('visible', show);
+                                     if (!show) {
+                                         if (limitationsTextarea) limitationsTextarea.value = '';
+                                          if(limitationsFormGroup) {
+                                            limitationsFormGroup.classList.remove('has-error');
+                                            const errorMsg = limitationsFormGroup.querySelector('.error-message');
+                                            if (errorMsg) errorMsg.textContent = '';
+                                        }
+                                     }
+                                 }
+                            };
+
+                            radioButtons.forEach(radio => {
+                                radio.addEventListener('change', (event) => {
+                                    toggleLimitations(event.target.value === 'Yes, some limitations');
+                                });
+                            });
+
+                             const selectedRadio = questionContent.querySelector(`input[name="health_check_q"]:checked`);
+                            const showInitially = selectedRadio && selectedRadio.value === 'Yes, some limitations';
+                             toggleLimitations(showInitially);
+
+
+                             const existingLimitations = userAnswers['health_limitations_details'];
+                             if (limitationsTextarea && existingLimitations !== undefined && showInitially) {
+                                 limitationsTextarea.value = existingLimitations;
+                             }
+                         }
+                     };
+                     setupConditionalTextarea();
+
+
+                    updateProgress();
+                    questionContent.classList.remove('fade-out');
+                    const firstFocusable = questionContent.querySelector('input:not([type=hidden]), select, textarea');
+                    if(firstFocusable) setTimeout(() => firstFocusable.focus(), 50);
+                 }, 300);
+            };
+
+             const showCompletionScreen = () => {
+                  const name = userAnswers['full_name'] || 'there';
+                  userNamePlaceholder.textContent = name;
+                  questionArea.classList.add('hidden');
+                  welcomeScreen.classList.add('hidden');
+                  completionScreen.classList.remove('hidden');
+                  completionScreen.classList.add('visible');
+                  console.log("Onboarding Complete. Final Answers:", userAnswers);
+             };
+
+             const navigateQuestions = (direction) => {
+                  const currentQuestion = questions[currentQuestionIndex];
+                   if(currentQuestion) {
+                       const currentFormGroup = questionContent.querySelector(`#q-${currentQuestion.id}`)?.closest('.form-group');
+                        if(currentFormGroup) { currentFormGroup.classList.remove('has-error'); const errorMsg = currentFormGroup.querySelector('.error-message'); if (errorMsg) errorMsg.textContent = ''; }
+                         if(currentQuestion.id === 'health_check_q') {
+                              const limitationsTextarea = questionContent.querySelector('#health_limitations_details');
+                             const limitationsFormGroup = limitationsTextarea ? limitationsTextarea.closest('.form-group') : null;
+                             if (limitationsFormGroup) {
+                                limitationsFormGroup.classList.remove('has-error');
+                                const errorMsg = limitationsFormGroup.querySelector('.error-message');
+                                if (errorMsg) errorMsg.textContent = '';
+                            }
+                        }
+                   }
+
+                  let nextIndex = currentQuestionIndex + direction;
+                 while (nextIndex >= 0 && nextIndex < questions.length) {
+                     const nextQuestion = questions[nextIndex];
+                     if (nextQuestion.dependsOn) {
+                          const dependencyValue = userAnswers[nextQuestion.dependsOn];
+                          if (!isConditionMet(nextQuestion, dependencyValue)) { nextIndex += direction; continue; }
+                     }
+                     renderQuestion(nextIndex);
+                     return;
+                 }
+                 if (direction > 0 && nextIndex >= questions.length) showCompletionScreen();
+                 else if (direction < 0 && nextIndex < 0) console.log("Already at the first question.");
+                 else { console.warn("Could not find a visible question in direction:", direction, "from index", currentQuestionIndex, "Next attempt was index", nextIndex); if(direction > 0) showCompletionScreen(); }
+            };
+
+             const startOnboarding = (path) => {
+                 currentPath = path;
+                 questions = (path === 'quick') ? quickQuestions : detailedQuestions;
+                 currentQuestionIndex = 0;
+                 userAnswers = {};
+                 welcomeScreen.classList.add('hidden');
+                 completionScreen.classList.add('hidden');
+                 questionArea.classList.remove('hidden');
+                 questionArea.classList.add('visible');
+                 renderQuestion(0);
+             };
+
+            setupOptionsCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    setupOptionsCards.forEach(c => { c.classList.remove('selected'); c.classList.add('dimmed'); });
+                    this.classList.remove('dimmed');
+                    this.classList.add('selected');
+                    selectedPath = this.dataset.path;
+                });
+            });
+
+            welcomeContinueBtn.addEventListener('click', function() {
+                if (!selectedPath) { alert('Please select a setup option first.'); return; }
+                this.style.transform = 'scale(0.97)';
+                setTimeout(() => { this.style.transform = 'scale(1)'; }, 150);
+                startOnboarding(selectedPath);
+            });
+
+             initialSkipLink?.addEventListener('click', (e) => {
+                 e.preventDefault();
+                 console.log('User skipped onboarding initially.');
+                 welcomeScreen.classList.add('hidden');
+                 questionArea.classList.add('hidden');
+                 completionScreen.classList.add('hidden');
+                 alert('Skipping to the main app experience (placeholder).');
+             });
+
+             nextBtn.addEventListener('click', () => {
+                 if (!validateCurrentQuestion()) return;
+
+                 const currentQuestion = questions[currentQuestionIndex];
+                 if (currentQuestion) {
+                      userAnswers[currentQuestion.id] = getQuestionValue(currentQuestion);
+
+                       if (currentQuestion.id === 'health_check_q') {
+                          const radioValue = userAnswers[currentQuestion.id];
+                          const limitationsTextarea = questionContent.querySelector('#health_limitations_details');
+                          if (radioValue === 'Yes, some limitations' && limitationsTextarea) {
+                               userAnswers['health_limitations_details'] = limitationsTextarea.value.trim();
+                          } else {
+                               delete userAnswers['health_limitations_details'];
+                          }
+                       }
+
+                 } else {
+                      console.error("Attempted to save answer for non-existent question at index", currentQuestionIndex);
+                      return;
+                 }
+                 navigateQuestions(1);
+            });
+
+
+             backBtn.addEventListener('click', () => {
+                 if (currentQuestionIndex > 0) navigateQuestions(-1);
+             });
+
+             finishBtn.addEventListener('click', () => {
+                 console.log("Exiting onboarding, proceeding to app.");
+                 window.location.href = './home.html';
+             });
+
+             questionContent.addEventListener('click', (e) => {
+                 const targetOption = e.target.closest('.radio-option, .checkbox-option');
+                 if (targetOption) {
+                     const input = targetOption.querySelector('input[type="radio"], input[type="checkbox"]');
+                     if (input && !input.disabled) {
+                         if (input.type === 'checkbox') {
+                            const group = targetOption.closest('.checkbox-group');
+                            const isNoneOption = input.value.toLowerCase().includes('none');
+                            if (input.checked && isNoneOption) { input.checked = false; }
+                            else if (input.checked && !isNoneOption) { input.checked = false; }
+                            else if (!input.checked && isNoneOption) { input.checked = true; const allCheckboxes = group?.querySelectorAll('input[type="checkbox"]'); allCheckboxes?.forEach(cb => { if (cb !== input) cb.checked = false; }); }
+                            else { input.checked = true; const noneCheckbox = group?.querySelector('input[type="checkbox"][value*="None" i], input[type="checkbox"][value*="none" i]'); if (noneCheckbox && noneCheckbox.checked) { noneCheckbox.checked = false; } }
+                         } else if (input.type === 'radio') { input.checked = true; }
+
+                         if(input.name === 'health_check_q') {
+                             const limitationsSection = questionContent.querySelector('#limitations_section');
+                             const limitationsTextarea = questionContent.querySelector('#health_limitations_details');
+                             const limitationsFormGroup = limitationsSection ? limitationsSection.querySelector('.form-group') : null;
+                              const toggleLimitations = (show) => {
+                                 if (limitationsSection) {
+                                      limitationsSection.classList.toggle('visible', show);
+                                     if (!show) {
+                                         if (limitationsTextarea) limitationsTextarea.value = '';
+                                          if(limitationsFormGroup) {
+                                            limitationsFormGroup.classList.remove('has-error');
+                                            const errorMsg = limitationsFormGroup.querySelector('.error-message');
+                                            if (errorMsg) errorMsg.textContent = '';
+                                        }
+                                     }
+                                 }
+                             };
+                             toggleLimitations(input.value === 'Yes, some limitations');
+                         }
+                      }
+                 }
+             });
+
+        });
+    </script>
+
+</body>
+</html>

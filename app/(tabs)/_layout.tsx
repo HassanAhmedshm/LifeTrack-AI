@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import { View } from "react-native";
 import { House, Zap, Target, MessageCircle } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 function TabBarIcon({
   name,
@@ -24,6 +25,8 @@ function TabBarIcon({
 }
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs
       screenOptions={{
@@ -32,9 +35,9 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: "#121212",
           borderTopColor: "#1E1E1E",
-          paddingBottom: 8,
+          paddingBottom: Math.max(8, insets.bottom),
           paddingTop: 8,
-          height: 64,
+          height: 56 + Math.max(8, insets.bottom),
         },
         headerShown: false,
       }}

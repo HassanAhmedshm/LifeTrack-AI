@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+ 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Track AI</title>
+    <!-- Ensure Font Awesome is correctly linked -->
+    <link rel="stylesheet" href="./fontawesome-free-6.7.1-web/css/all.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --deep-black: #0f0f0f;
+            --dark-grey: #333333;
+            --medium-grey: #555555; /* Added for outline */
+            --bright-yellow: #f2c464;
+            --light-grey: #f2f2f2;
+            --white: #ffffff;
+            --warm-beige: #c9bbaa; /* Can be used for outlines */
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Manrope", sans-serif;
+            background-color: var(--deep-black);
+            color: var(--white);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            /* Increased padding-bottom for bottom nav */
+            padding-bottom: 90px;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 480px;
+            height: 60px;
+            background-color: var(--deep-black);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 1rem;
+            z-index: 1000;
+            border-bottom: 1px solid var(--dark-grey);
+        }
+
+        /* Default PFP styling */
+        .profile-pic-container {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--medium-grey); /* Default bg */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* Hide img if it breaks bounds */
+        }
+
+        .profile-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* If an actual image is used */
+        }
+
+        .profile-pic-container .default-pfp-icon {
+             font-size: 24px; /* Adjust size of default icon */
+             color: var(--light-grey); /* Color of default icon */
+        }
+
+
+        .top-bar h1 {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .notification i {
+            font-size: 1.2rem;
+            color: var(--white);
+            transition: color 0.3s ease;
+        }
+
+        .notification i:hover {
+            cursor: pointer;
+        }
+
+        .notification i:active {
+            color: var(--bright-yellow);
+        }
+
+        /* Main Content */
+        main {
+            margin-top: 70px; /* Adjusted for fixed top bar */
+            padding: 1rem;
+        }
+
+        /* Section Base Styling */
+        .section {
+            background-color: var(--dark-grey);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .section-header h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+
+      
+
+        .add-goal-btn {
+            background: none;
+            border: none;
+            color: var(--bright-yellow);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0.2rem 0.5rem;
+        }
+
+        .header-right{
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .goals-counter {
+            color: var(--light-grey);
+            font-size: 0.9rem;
+        }
+
+        .goals-list {
+            margin-bottom: 1rem;
+            max-height: 200px; /* Limit initial height if needed */
+            overflow-y: auto; /* Scroll if too many goals */
+        }
+
+        .goal-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .goal-item:last-child {
+            border-bottom: none;
+        }
+
+
+        .goal-checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--bright-yellow);
+            border-radius: 50%;
+            margin-right: 1rem;
+            cursor: pointer;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        .goal-checkbox.checked {
+            background-color: var(--bright-yellow);
+            position: relative;
+        }
+
+        .goal-checkbox.checked::after {
+            content: '✓';
+            position: absolute;
+            color: var(--deep-black);
+            font-size: 14px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+        }
+
+        .goal-item span {
+            flex-grow: 1;
+            margin-right: 0.5rem; /* Space before delete icon */
+            word-break: break-word; /* Wrap long text */
+        }
+
+        .goal-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .delete-goal {
+            color: var(--warm-beige); /* Softer delete color */
+            cursor: pointer;
+            padding: 0.5rem;
+            transition: color 0.2s ease;
+        }
+        .delete-goal:hover {
+            color: var(--bright-yellow);
+        }
+
+        .view-all-btn {
+            width: 100%;
+            padding: 0.8rem;
+            margin-top: 1rem; /* Space above button */
+            background: transparent;
+            border: 1px solid var(--bright-yellow);
+            border-radius: 8px;
+            color: var(--bright-yellow);
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        
+
+        .progress-circles {
+            display: grid;
+            /* Adjust columns for 3 items */
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-top: 1rem;
+            margin-bottom: 1.5rem; /* Space before summary */
+        }
+
+        .progress-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            text-align: center; /* Center text */
+        }
+
+        /* Nutrition Circle Outline Style */
+        .progress-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid var(--medium-grey); /* Outline border */
+             /* Use conic-gradient for the progress *fill* inside the border */
+            background: conic-gradient(var(--bright-yellow) calc(var(--progress) * 1%), transparent 0);
+            /* Remove the ::before pseudo-element fill */
+        }
+
+        /* Remove the old ::before if it existed */
+         .progress-circle::before {
+           display: none;
+         }
+
+
+        .progress-value {
+            position: relative; /* Already relative */
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--white);
+        }
+
+        /* Nutrition Summary (Total Cals/Water) */
+        .nutrition-summary {
+            display: flex;
+            justify-content: space-around; /* Space out evenly */
+            margin-top: 1.5rem; /* Space above */
+            padding-top: 1rem; /* Optional space */
+            border-top: 1px solid rgba(255, 255, 255, 0.1); /* Separator line */
+            color: var(--light-grey);
+            font-size: 0.9rem;
+        }
+        .nutrition-summary span {
+            text-align: center;
+        }
+        .nutrition-summary .value {
+            font-weight: bold;
+            color: var(--white);
+        }
+        .nutrition-summary .goal {
+            color: var(--warm-beige);
+        }
+
+        .flow-buttons-container {
+            display: flex;
+            gap: 0.8rem; /* Space between buttons */
+            overflow-x: auto; /* Enable horizontal scroll */
+            padding: 0.5rem 2px; /* Padding for scrollbar visibility */
+             margin-left: -1.5rem; /* Counteract section padding for edge-to-edge feel */
+             margin-right: -1.5rem;
+             padding-left: 1.5rem;
+             padding-right: 1.5rem;
+
+            /* Hide scrollbar visually (cross-browser) */
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        .flow-buttons-container::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+
+        .flow-button {
+            flex-shrink: 0; /* Prevent buttons from shrinking */
+            background-color: var(--medium-grey); /* Slightly different background */
+            border: 1px solid var(--warm-beige); /* Subtle border */
+            color: var(--light-grey);
+            padding: 0.7rem 1.2rem;
+            border-radius: 25px; /* Pill shape */
+            cursor: pointer;
+            white-space: nowrap; /* Prevent text wrapping */
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+         .flow-button i {
+            font-size: 1rem;
+            color: var(--bright-yellow); /* Icon color */
+         }
+
+        .flow-button:hover, .flow-button:active {
+            background-color: var(--dark-grey);
+            border-color: var(--bright-yellow);
+        }
+
+
+        #ai-interaction .ai-input-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: rgba(255, 255, 255, 0.1); /* Slightly lighter than chat outline */
+            padding: 0.5rem;
+            border-radius: 30px; /* Pill shape */
+            margin-top: 1rem;
+        }
+
+        #ai-prompt-input {
+            flex-grow: 1;
+            background: none;
+            border: none;
+            outline: none;
+            color: var(--light-grey);
+            font-size: 1rem;
+            padding: 0.4rem 0.5rem;
+        }
+
+        #ai-prompt-input::placeholder {
+            color: rgba(242, 242, 242, 0.7); /* Lighter placeholder */
+        }
+
+        .icon-button {
+            background: none;
+            border: none;
+            outline: none;
+            color: var(--light-grey); /* Default/Inactive color for all icons */
+            font-size: 1.4rem;
+            cursor: pointer;
+            padding: 0.3rem; /* Add padding for easier click */
+            margin: 0 0.2rem;
+            transition: color 0.3s ease;
+            display: flex; /* Center icon */
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Active state specifically for Send Button based on input */
+        #ai-send-btn.active {
+            color: var(--bright-yellow); /* Active color */
+        }
+
+        /* Hover/Active for other buttons */
+         #ai-voice-btn:hover, #ai-voice-btn:active,
+         #ai-camera-btn:hover, #ai-camera-btn:active {
+             color: var(--warm-beige);
+         }
+        /* Specific active for send */
+        #ai-send-btn:active {
+             color: var(--bright-yellow); /* Remain yellow when clicked if active */
+         }
+
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 480px;
+            height: 70px; /* Standard height */
+            background-color: var(--deep-black);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid var(--dark-grey);
+            z-index: 1000; /* Ensure it's above content */
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.2rem; /* Smaller gap */
+            color: var(--light-grey);
+            text-decoration: none;
+            font-size: 0.75rem; /* Smaller text */
+            padding: 0.5rem;
+            flex: 1; /* Distribute space evenly */
+            text-align: center;
+             transition: color 0.2s ease;
+        }
+
+        .nav-item i {
+            font-size: 1.3rem; /* Slightly larger icons */
+             margin-bottom: 2px; /* Space between icon and text */
+        }
+
+        .nav-item.active {
+            color: var(--bright-yellow);
+        }
+         .nav-item:hover:not(.active) {
+             color: var(--white); /* Highlight on hover */
+         }
+
+
+        /* Responsive Adjustments */
+        @media (max-width: 360px) {
+            .progress-circles {
+                 /* Keep 3 columns or switch to 2? Let's keep 3 but reduce gap */
+                gap: 1rem;
+            }
+            .progress-circle {
+                width: 70px;
+                height: 70px;
+            }
+             .progress-value {
+                 font-size: 0.9rem;
+             }
+             .flow-button {
+                 padding: 0.6rem 1rem;
+                 font-size: 0.85rem;
+             }
+              .flow-button i {
+                font-size: 0.9rem;
+              }
+        }
+
+         /* Styles for goal input */
+         .goal-input-container {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+         }
+         .goal-input {
+            flex-grow: 1;
+            background: none;
+            border: none;
+            outline: none;
+            color: var(--light-grey);
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--warm-beige);
+         }
+         .add-goal-btn2 {
+            background-color: var(--bright-yellow);
+            color: var(--deep-black);
+            border: none;
+            border-radius: 6px;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-weight: 600;
+         }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header class="top-bar">
+             <!-- Default PFP Structure -->
+             <div class="profile-pic-container">
+                <!-- If user HAS image, use <img>: -->
+                <!-- <img src="user-actual-pfp.jpg" alt="Profile" class="profile-img"> -->
+                <!-- If user has NO image, show default icon (Font Awesome used here): -->
+                 <i class="fas fa-user default-pfp-icon"></i>
+             </div>
+            <h1>Life Track AI</h1>
+            <div class="notification">
+                <i class="fas fa-bell"></i>
+            </div>
+        </header>
+
+        <main>
+            <!-- Renamed Section & Class -->
+            <section class="goals-section section">
+                <div class="section-header">
+                    <!-- Renamed Header -->
+                    <h2>Today's Goals</h2>
+                    <div class="header-right">
+                        <span class="goals-counter">0/0 Done</span>
+                        <button class="add-goal-btn" aria-label="Add new goal"><i class="fas fa-plus"></i></button>
+                    </div>
+                </div>
+                <div class="goals-list">
+                    <!-- Goal items will be added here by JS or backend -->
+                     <!-- Example Goal Items (can be removed if using JS) -->
+                     <div class="goal-item">
+                        <div class="goal-checkbox"></div>
+                        <span>Drink 8 glasses of water</span>
+                        <div class="goal-actions">
+                            <i class="fas fa-trash delete-goal"></i>
+                        </div>
+                    </div>
+                     <div class="goal-item">
+                        <div class="goal-checkbox checked"></div>
+                        <span>Morning workout</span>
+                        <div class="goal-actions">
+                            <i class="fas fa-trash delete-goal"></i>
+                        </div>
+                    </div>
+                    <div class="goal-item">
+                        <div class="goal-checkbox"></div>
+                        <span>Read for 30 minutes</span>
+                        <div class="goal-actions">
+                            <i class="fas fa-trash delete-goal"></i>
+                        </div>
+                    </div>
+                      <div class="goal-item">
+                        <div class="goal-checkbox"></div>
+                        <span>Plan tomorrow's tasks</span>
+                        <div class="goal-actions">
+                            <i class="fas fa-trash delete-goal"></i>
+                        </div>
+                    </div>
+
+
+                </div>
+                <button class="view-all-btn">View All Goals <i class="fas fa-chevron-right"></i></button>
+            </section>
+
+            <section class="nutrition-section section">
+                <div class="section-header">
+                    <h2>Nutrition</h2>
+                     <!-- Maybe add edit/log button here later -->
+                </div>
+                 <!-- Updated Circles (removed Cals/Water) -->
+                <div class="progress-circles">
+                    <div class="progress-item">
+                        <!-- Added data-progress for JS and CSS variable -->
+                        <div class="progress-circle" data-progress="75" style="--progress: 75">
+                            <div class="progress-value">75%</div>
+                        </div>
+                        <span>Protein</span>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-circle" data-progress="60" style="--progress: 60">
+                            <div class="progress-value">60%</div>
+                        </div>
+                        <span>Carbs</span>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-circle" data-progress="85" style="--progress: 85">
+                            <div class="progress-value">85%</div>
+                        </div>
+                        <span>Fat</span>
+                    </div>
+                    <!-- Calories and Water items REMOVED from here -->
+                </div>
+
+                 <!-- Added Nutrition Summary for Cals/Water at the bottom -->
+                 <div class="nutrition-summary">
+                     <span>Total Cals: <span class="value" id="total-cals-value">1200</span> / <span class="goal" id="total-cals-goal">2000</span></span>
+                     <span>Water: <span class="value" id="total-water-value">4</span> / <span class="goal" id="total-water-goal">8</span> glasses</span>
+                 </div>
+            </section>
+
+            <!-- Flow Actions Section Added -->
+            <section class="flow-actions-section section">
+                 <div class="section-header">
+                     <h2>Start a Flow</h2>
+                 </div>
+                <div class="flow-buttons-container">
+                    <button class="flow-button"><i class="fas fa-dumbbell"></i> Workout</button>
+                    <button class="flow-button"><i class="fas fa-utensils"></i> Chef</button>
+                    <button class="flow-button"><i class="fas fa-tasks"></i> Focus</button> <!-- Changed "Flow" button to something more specific like "Focus" or "Mindfulness" -->
+                    <button class="flow-button"><i class="fas fa-book-open"></i> Learn</button> <!-- Example extra button -->
+                     <button class="flow-button"><i class="fas fa-moon"></i> Relax</button> <!-- Example extra button -->
+
+                </div>
+            </section>
+
+
+            <section id="ai-interaction" class="ai-section section">
+                 <div class="section-header">
+                     <h2 class="section-title">Ask AI</h2>
+                     <!-- Maybe history button? -->
+                 </div>
+                <div class="ai-input-group">
+                    <input type="text" id="ai-prompt-input" placeholder="Ask anything...">
+                    <button id="ai-voice-btn" class="icon-button" aria-label="Voice input">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
+                    <button id="ai-camera-btn" class="icon-button" aria-label="Camera input">
+                        <i class="fas fa-camera"></i>
+                    </button>
+                     <!-- Send button starts inactive (grey), gets 'active' class (yellow) via JS -->
+                    <button id="ai-send-btn" class="icon-button" aria-label="Send message">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Updated Bottom Navigation Order -->
+        <nav class="bottom-nav">
+             <a href="#settings" class="nav-item">
+                 <i class="fas fa-cog"></i>
+                 <span>Settings</span>
+             </a>
+            <a href="./chat bot.html" class="nav-item">
+                 <i class="fas fa-comments"></i>
+                 <span>Chat</span>
+             </a>
+            <a href="" class="nav-item active"> <!-- Home is initially active -->
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+             <a href="./Flow.html" class="nav-item"> <!-- New Flow tab -->
+                 <i class="fas fa-bolt"></i> <!-- Example icon for Flow -->
+                 <span>Flow</span>
+             </a>
+            <a href="./goals.html" class="nav-item">
+                <i class="fas fa-bullseye"></i>
+                <span>Goals</span>
+            </a>
+        </nav>
+    </div>
+
+     <!-- Consolidated JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- Initialize Progress Circles ---
+            const progressCircles = document.querySelectorAll('.progress-circle');
+            progressCircles.forEach(circle => {
+                const progress = circle.dataset.progress;
+                if (!isNaN(progress)) {
+                    const percentage = Math.max(0, Math.min(progress, 100)); // Clamp between 0-100
+                    // Set the CSS variable used in the background gradient
+                    circle.style.setProperty('--progress', percentage);
+                } else {
+                    circle.style.setProperty('--progress', 0); // Default if no data
+                }
+            });
+
+
+            // --- Goals Section Logic ---
+            const goalsList = document.querySelector('.goals-list');
+            const addGoalBtnHeader = document.querySelector('.goals-section .add-goal-btn');
+            const viewAllBtn = document.querySelector('.view-all-btn');
+            const goalsCounter = document.querySelector('.goals-counter');
+            let isExpanded = false; // For View All toggle
+            const maxVisibleGoals = 3; // How many goals to show initially
+
+            function updateGoalsCounter() {
+                if (!goalsList) return;
+                const totalGoals = goalsList.querySelectorAll('.goal-item').length;
+                const completedGoals = goalsList.querySelectorAll('.goal-checkbox.checked').length;
+                if (goalsCounter) {
+                    goalsCounter.textContent = `${completedGoals}/${totalGoals} Done`;
+                }
+            }
+
+            function updateGoalsVisibility() {
+                 if (!goalsList || !viewAllBtn) return;
+                 const goals = goalsList.querySelectorAll('.goal-item');
+
+                if (goals.length > maxVisibleGoals) {
+                    viewAllBtn.style.display = 'flex'; // Show the button
+                    goals.forEach((goal, index) => {
+                        // Hide goals beyond the max limit only if not expanded
+                        if (index >= maxVisibleGoals) {
+                            goal.style.display = isExpanded ? 'flex' : 'none';
+                        } else {
+                             goal.style.display = 'flex'; // Ensure first few are always visible
+                        }
+                    });
+                     // Update button text/icon
+                    viewAllBtn.innerHTML = isExpanded ?
+                        'Show Less <i class="fas fa-chevron-up"></i>' :
+                        `View All Goals (${goals.length}) <i class="fas fa-chevron-right"></i>`;
+                } else {
+                    viewAllBtn.style.display = 'none'; // Hide button if not enough goals
+                    goals.forEach(goal => goal.style.display = 'flex'); // Ensure all are visible
+                }
+            }
+
+             function addGoal(text) {
+                 if (!goalsList || !text) return;
+
+                 const newGoalItem = document.createElement('div');
+                 newGoalItem.className = 'goal-item';
+                 newGoalItem.innerHTML = `
+                     <div class="goal-checkbox" aria-label="Mark goal as complete" role="checkbox" aria-checked="false" tabindex="0"></div>
+                     <span>${text}</span>
+                     <div class="goal-actions">
+                         <i class="fas fa-trash delete-goal" aria-label="Delete goal" role="button" tabindex="0"></i>
+                     </div>
+                 `;
+                 goalsList.appendChild(newGoalItem);
+
+                 // Re-attach listeners to the new goal elements
+                 attachGoalListeners(newGoalItem);
+
+                 // Update UI
+                 updateGoalsCounter();
+                 updateGoalsVisibility();
+             }
+
+              function attachGoalListeners(goalItem) {
+                 if (!goalItem) return;
+                 const checkbox = goalItem.querySelector('.goal-checkbox');
+                 const deleteBtn = goalItem.querySelector('.delete-goal');
+
+                 // Checkbox toggle
+                 checkbox.addEventListener('click', function() {
+                     this.classList.toggle('checked');
+                      this.setAttribute('aria-checked', this.classList.contains('checked'));
+                     updateGoalsCounter();
+                 });
+                  checkbox.addEventListener('keypress', function(e) { // Accessibility for Enter/Space
+                     if (e.key === 'Enter' || e.key === ' ') {
+                         e.preventDefault(); // Prevent page scroll on Space
+                         this.click();
+                     }
+                 });
+
+
+                 // Delete button action
+                 deleteBtn.addEventListener('click', () => {
+                     goalItem.remove();
+                     updateGoalsCounter();
+                     updateGoalsVisibility();
+                 });
+                  deleteBtn.addEventListener('keypress', function(e) { // Accessibility
+                     if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          this.click();
+                      }
+                  });
+             }
+
+
+            // Attach listeners to existing goals on load
+            goalsList.querySelectorAll('.goal-item').forEach(attachGoalListeners);
+
+             // "View All" button click
+             if(viewAllBtn){
+                 viewAllBtn.addEventListener('click', () => {
+                    isExpanded = !isExpanded;
+                    updateGoalsVisibility();
+                 });
+             }
+
+
+            // "Add Goal" button in header click
+            if(addGoalBtnHeader) {
+                addGoalBtnHeader.addEventListener('click', () => {
+                    // Check if input already exists to prevent duplicates
+                     const existingInput = goalsList.querySelector('.goal-input-container');
+                    if (existingInput) {
+                        existingInput.querySelector('.goal-input').focus();
+                        return; // Don't add another input box if one exists
+                    }
+
+                    // Create input elements
+                    const inputContainer = document.createElement('div');
+                    inputContainer.className = 'goal-input-container';
+
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'goal-input';
+                    input.placeholder = 'Enter your new goal...';
+                     input.setAttribute('aria-label', 'New goal description');
+
+                    const addButton = document.createElement('button');
+                    addButton.className = 'add-goal-btn2';
+                    addButton.innerHTML = 'Add';
+                     addButton.setAttribute('aria-label', 'Confirm adding goal');
+
+
+                    // Add Goal functionality
+                    const confirmAdd = () => {
+                        const goalText = input.value.trim();
+                        if (goalText) {
+                             addGoal(goalText); // Use the main add function
+                            inputContainer.remove(); // Remove the input box
+                         } else {
+                             // Maybe provide feedback if empty?
+                              inputContainer.remove(); // Remove even if empty
+                         }
+                    };
+
+                     addButton.addEventListener('click', confirmAdd);
+                     input.addEventListener('keypress', (event) => {
+                         if (event.key === 'Enter') {
+                              event.preventDefault();
+                             confirmAdd();
+                         }
+                      });
+                       // Optional: Remove input if user clicks away (blur) without adding?
+                      // input.addEventListener('blur', () => {
+                        // setTimeout is a workaround: lets click on 'Add' button register before blur removes the input
+                        //  setTimeout(() => { if (!addButton.contains(document.activeElement)) inputContainer.remove(); }, 100);
+                       // });
+
+
+                     inputContainer.appendChild(input);
+                     inputContainer.appendChild(addButton);
+
+                     // Add the input container to the top of the goals list
+                     goalsList.insertBefore(inputContainer, goalsList.firstChild);
+                     input.focus(); // Focus the new input field
+                 });
+            }
+
+            // Initial setup for goals visibility and counter
+             updateGoalsCounter();
+             updateGoalsVisibility();
+
+
+            // --- AI Chat Send Button Logic ---
+            const aiPromptInput = document.getElementById('ai-prompt-input');
+            const aiSendBtn = document.getElementById('ai-send-btn');
+
+            if (aiPromptInput && aiSendBtn) {
+                const toggleSendButtonState = () => {
+                    if (aiPromptInput.value.trim().length > 0) {
+                        aiSendBtn.classList.add('active');
+                        aiSendBtn.disabled = false; // Make sure it's enabled
+                        aiSendBtn.style.cursor = 'pointer';
+                    } else {
+                        aiSendBtn.classList.remove('active');
+                        aiSendBtn.disabled = true; // Disable button if no text
+                        aiSendBtn.style.cursor = 'default';
+
+                    }
+                };
+
+                // Check initially and on input
+                aiPromptInput.addEventListener('input', toggleSendButtonState);
+                toggleSendButtonState(); // Run on load
+
+                // --- Example Send Action (replace with your actual logic) ---
+                let isProcessing = false; // Prevent multiple submits
+
+                const sendAiPrompt = async () => { // Made async for potential API call
+                     if (isProcessing || !aiPromptInput.value.trim()) return;
+
+                     const promptText = aiPromptInput.value.trim();
+                     console.log("Sending to AI:", promptText);
+                     // Example: Show loading state
+                     isProcessing = true;
+                      aiSendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; // Loading indicator
+                      aiSendBtn.disabled = true;
+
+
+                      // --- Simulate API Call ---
+                      try {
+                         // Replace with your actual getAIResponse or fetch call
+                         // const { response, error } = await getAIResponse(promptText, context);
+                         // Fake delay
+                          await new Promise(resolve => setTimeout(resolve, 1500));
+                         console.log("AI Response Received (Simulated)");
+                          // Handle response here - display in chat etc.
+
+                          aiPromptInput.value = ''; // Clear input after sending
+                          toggleSendButtonState(); // Update button state (will become inactive)
+
+                     } catch (error) {
+                          console.error("AI Error:", error);
+                         // Display error to user
+                      } finally {
+                          isProcessing = false;
+                          // Restore button icon - check state again in case input was cleared by user during loading
+                          if(aiPromptInput.value.trim().length === 0){
+                               aiSendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                               aiSendBtn.classList.remove('active');
+                               aiSendBtn.disabled = true;
+                          } else {
+                             aiSendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                             aiSendBtn.classList.add('active');
+                             aiSendBtn.disabled = false;
+                          }
+                      }
+
+                };
+
+                aiSendBtn.addEventListener('click', sendAiPrompt);
+                 aiPromptInput.addEventListener('keypress', (event) => {
+                     if (event.key === 'Enter' && !event.shiftKey) { // Send on Enter, allow Shift+Enter for newline
+                         event.preventDefault();
+                         sendAiPrompt();
+                     }
+                 });
+            }
+
+
+            // --- Navigation Highlighting ---
+            const navItems = document.querySelectorAll('.bottom-nav .nav-item');
+            navItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    // In a real app, you'd preventDefault and load content.
+                    // Here, we just visually update the active state.
+                    // e.preventDefault(); // Uncomment if it's a single-page app switching views
+
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    item.classList.add('active');
+
+                    // Simple content switching idea (Optional - needs more work for real SPA)
+                    // const targetId = item.getAttribute('href').substring(1);
+                    // document.querySelectorAll('main > section').forEach(section => {
+                    //     section.style.display = 'none';
+                    // });
+                    // const activeSection = document.getElementById(targetId + '-section'); // Assumes section IDs match hrefs
+                    // if(activeSection) activeSection.style.display = 'block';
+                     // Special case for home which might show multiple sections
+                    // if(targetId === 'home'){ ... show default sections ... }
+                });
+            });
+
+
+            // --- Other Button Placeholders ---
+             const aiCameraBtn = document.getElementById('ai-camera-btn');
+             const aiVoiceBtn = document.getElementById('ai-voice-btn');
+
+             if (aiCameraBtn) {
+                 aiCameraBtn.addEventListener('click', () => {
+                     alert('Camera functionality coming soon!');
+                 });
+             }
+
+             if (aiVoiceBtn) {
+                 aiVoiceBtn.addEventListener('click', () => {
+                     alert('Voice functionality coming soon!');
+                 });
+             }
+               // Flow buttons - Add actual functionality here
+                document.querySelectorAll('.flow-button').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const flowType = button.textContent.trim(); // E.g., "Workout", "Chef"
+                         alert(`Starting '${flowType}' flow! (Functionality to be added)`);
+                    });
+                });
+
+        });
+    </script>
+
+</body>
+
+</html>
