@@ -70,7 +70,7 @@ export default function HomeScreen() {
         >
           {[
             { label: "Log Workout", onPress: () => router.push("/workout") },
-            { label: "Chef AI" },
+            { label: "Chef AI", onPress: () => router.push("/chef") },
             { label: "Flow Scheduler" },
           ].map((item) => (
             <Pressable
