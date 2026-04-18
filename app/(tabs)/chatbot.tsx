@@ -9,36 +9,83 @@ import {
 import { Send } from "lucide-react-native";
 import { Input } from "../../src/components/ui/Input";
 import { Button } from "../../src/components/ui/Button";
+import { useUserStore } from "../../src/store/useUserStore";
+import * as aiService from "../../src/services/ai";
 
 type ChatMessage = {
   id: string;
-  role: "user" | "assistant";
+  role: "user" | "ai";
   content: string;
+  isError?: boolean;
 };
 
-const SAMPLE_MESSAGES: ChatMessage[] = [
+const INITIAL_MESSAGES: ChatMessage[] = [
   {
-    id: "assistant-1",
-    role: "assistant",
+    id: "ai-1",
+    role: "ai",
     content: "Hey! I can help plan workouts, nutrition habits, and weekly goals.",
-  },
-  {
-    id: "user-1",
-    role: "user",
-    content: "Create a 3-day strength split for this week.",
-  },
-  {
-    id: "assistant-2",
-    role: "assistant",
-    content: "Great choice. I'll start with Push, Pull, and Legs and keep sessions under 60 minutes.",
   },
 ];
 
 export default function ChatbotScreen() {
-  const [draft, setDraft] = useState("");
+  const groqApiKey = useUserStore((state) => state.groqApiKey);
+  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
+  const [inputText, setInputText] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const hasApiKey = Boolean(groqApiKey?.trim());
+  const isComposerDisabled = !hasApiKey || isLoading;
+  const placeholder = hasApiKey
+    ? "Type your message..."
+    : "Enter API Key in Settings";
 
-  const handleSend = () => {
-    setDraft("");
+  const handleSend = async () => {
+    if (isComposerDisabled) {
+      return;
+    }
+
+    const prompt = inputText.trim();
+    if (!prompt) {
+      return;
+    }
+
+    const userMessage: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      content: prompt,
+    };
+
+    setMessages((currentMessages) => [...currentMessages, userMessage]);
+    setInputText("");
+    setIsLoading(true);
+
+    try {
+      const response = await aiService.sendPrompt(
+        prompt,
+        "Respond in JSON format with a 'message' string field."
+      );
+      const message = extractAiMessage(response);
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        {
+          id: `ai-${Date.now()}`,
+          role: "ai",
+          content: message,
+        },
+      ]);
+    } catch (error) {
+      console.error("Chat request failed:", error);
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        {
+          id: `ai-error-${Date.now()}`,
+          role: "ai",
+          content: "Network error or invalid key. Please try again.",
+          isError: true,
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -49,7 +96,7 @@ export default function ChatbotScreen() {
       <View className="flex-1 bg-dark">
         <ScrollView className="flex-1 px-4 pt-4">
           <View className="gap-3 pb-6">
-            {SAMPLE_MESSAGES.map((message) => {
+            {messages.map((message) => {
               const isUser = message.role === "user";
               return (
                 <View
@@ -60,6 +107,8 @@ export default function ChatbotScreen() {
                     className={`max-w-[85%] px-4 py-3 ${
                       isUser
                         ? "rounded-2xl rounded-br-none bg-brand"
+                        : message.isError
+                        ? "rounded-2xl rounded-bl-none border border-red-500 bg-red-500/20"
                         : "rounded-2xl rounded-bl-none bg-card"
                     }`}
                   >
@@ -75,11 +124,12 @@ export default function ChatbotScreen() {
           <View className="flex-row items-center gap-2">
             <View className="flex-1">
               <Input
-                placeholder="Type your message..."
-                value={draft}
-                onChangeText={setDraft}
+                placeholder={placeholder}
+                value={inputText}
+                onChangeText={setInputText}
                 returnKeyType="send"
                 onSubmitEditing={handleSend}
+                editable={!isComposerDisabled}
               />
             </View>
             <Button
@@ -88,11 +138,26 @@ export default function ChatbotScreen() {
               accessibilityLabel="Send message"
               icon={<Send size={18} color="white" />}
               size="icon"
-              disabled={!draft.trim()}
+              isLoading={isLoading}
+              disabled={isComposerDisabled || !inputText.trim()}
             />
           </View>
         </View>
       </View>
     </KeyboardAvoidingView>
   );
+}
+
+function extractAiMessage(response: unknown): string {
+  if (!response || typeof response !== "object") {
+    throw new Error("Invalid AI response");
+  }
+
+  const record = response as Record<string, unknown>;
+  const message = record.message;
+  if (typeof message !== "string" || !message.trim()) {
+    throw new Error("Missing AI message field");
+  }
+
+  return message.trim();
 }

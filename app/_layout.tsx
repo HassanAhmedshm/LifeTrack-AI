@@ -4,6 +4,7 @@ import { View, Text } from "react-native";
 import { useEffect, useState } from "react";
 import { initDB } from "../src/db/index";
 import { useUserStore } from "../src/store/useUserStore";
+import { useGoalStore } from "../src/store/useGoalStore";
 
 export default function RootLayout() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function RootLayout() {
   const onboardingCompleted = useUserStore(
     (state) => state.onboardingCompleted
   );
+  const goalsHydrated = useGoalStore((state) => state.isHydrated);
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -23,6 +25,9 @@ export default function RootLayout() {
 
         // Step 2: Hydrate user store from database
         await useUserStore.getState().hydrate();
+
+        // Step 3: Hydrate goals store from database
+        await useGoalStore.getState().hydrate();
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error";
@@ -58,7 +63,7 @@ export default function RootLayout() {
     );
   }
 
-  const isReady = dbReady && isHydrated;
+  const isReady = dbReady && isHydrated && goalsHydrated;
 
   return (
     <View className="flex-1 bg-dark">
