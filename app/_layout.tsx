@@ -1,5 +1,5 @@
 import "../global.css";
-import { Slot, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { View, Text } from "react-native";
 import { useEffect, useState } from "react";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
@@ -89,17 +89,35 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView className="flex-1 bg-dark" edges={["top"]}>
-        <View className="flex-1 bg-dark">
-          {!isReady ? (
-            <View className="flex-1 items-center justify-center">
-              <Text className="text-white text-lg">Initializing...</Text>
-            </View>
-          ) : (
-            <Slot />
-          )}
-        </View>
-      </SafeAreaView>
+      {!isReady ? (
+        <SafeAreaView className="flex-1 bg-dark" edges={["top"]}>
+          <View className="flex-1 items-center justify-center">
+            <Text className="text-white text-lg">Initializing...</Text>
+          </View>
+        </SafeAreaView>
+      ) : (
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="workout"
+            options={{
+              headerShown: true,
+              title: "Workout",
+              headerBackTitle: "Back",
+            }}
+          />
+          <Stack.Screen
+            name="chef"
+            options={{
+              headerShown: true,
+              title: "Chef",
+              headerBackTitle: "Back",
+            }}
+          />
+          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+          <Stack.Screen name="settings" options={{ headerShown: true, title: "Settings" }} />
+        </Stack>
+      )}
     </SafeAreaProvider>
   );
 }
