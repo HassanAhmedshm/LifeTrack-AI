@@ -35,11 +35,7 @@ export interface UserStore {
   setApiKey: (key: string) => Promise<void>;
   updateProfile: (newProfile: UserProfile) => Promise<void>;
   logMorningWeight: (weight: number, notes?: string) => Promise<void>;
-  completeOnboarding: (payload: {
-    name: string;
-    primaryGoal: string;
-    allergies?: string;
-  }) => Promise<void>;
+  completeOnboarding: () => Promise<void>;
   hydrate: () => Promise<void>;
 }
 
@@ -164,36 +160,16 @@ export const useUserStore = create<UserStore>((set, get) => ({
   },
 
   // Mark onboarding complete in store and sync to SQLite
-  completeOnboarding: async (payload) => {
-    const { id, profile } = get();
+  completeOnboarding: async () => {
+    const { id } = get();
     if (!id) {
       throw new Error("User not initialized. Cannot complete onboarding.");
     }
 
-    const name = payload.name.trim();
-    const primaryGoal = payload.primaryGoal.trim();
-    const allergies = payload.allergies?.trim() ?? "";
-    if (!name || !primaryGoal) {
-      throw new Error("Name and primary goal are required.");
-    }
-
-    const nextProfile: UserProfile = normalizeUserProfile(
-      {
-        ...profile,
-        name,
-        primaryGoal,
-        allergies,
-      },
-      profile
-    );
-
     const db = getDB();
     try {
-      await db.runAsync(
-        "UPDATE users SET onboarding_completed = 1, profile_json = ? WHERE id = ?",
-        [JSON.stringify(nextProfile), id]
-      );
-      set({ onboardingCompleted: true, name: nextProfile.name, profile: nextProfile });
+      await db.runAsync("UPDATE users SET onboarding_completed = 1 WHERE id = ?", [id]);
+      set({ onboardingCompleted: true });
     } catch (error) {
       console.error("✗ Failed to complete onboarding:", error);
       throw error;
