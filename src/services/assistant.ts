@@ -82,33 +82,22 @@ export async function runAssistantPrompt(
 async function buildAssistantContext(): Promise<string> {
   const db = getDB();
   const user = useUserStore.getState();
-  const goals = useGoalStore.getState().goals;
   const activeWorkout = useWorkoutStore.getState().activeWorkout;
   const userId = user.id;
   if (!userId) {
     throw new Error("User not initialized.");
   }
-  const userProfile = await db.getFirstAsync<{ preferences_json: string | null }>(
-    "SELECT preferences_json FROM users WHERE id = ?",
+  const userProfile = await db.getFirstAsync<{ profile_json: string | null }>(
+    "SELECT profile_json FROM users WHERE id = ?",
     [userId]
   );
-  const profile = parseProfile(userProfile?.preferences_json ?? null);
+  const profile = parseProfile(userProfile?.profile_json ?? null);
 
-  const recentExercises = await db.getAllAsync<{ name: string }>(
-    `SELECT e.name
-     FROM exercises e
-     JOIN workouts w ON w.id = e.workout_id
-     WHERE w.user_id = ?
-     ORDER BY e.id DESC
-     LIMIT 8`,
-    [userId]
-  );
+  // Goals feature disabled during migration
+  const topGoals: Array<{title: string; current: number; target: number}> = [];
 
-  const topGoals = goals.slice(0, 5).map((goal) => ({
-    title: goal.title,
-    current: goal.current_value,
-    target: goal.target_value,
-  }));
+  // Recent exercises query updated for new schema (disabled for now)
+  const recentExercises: Array<{name: string}> = [];
 
   const context = {
     userName: user.name || "Athlete",

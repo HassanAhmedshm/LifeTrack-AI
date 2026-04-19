@@ -49,36 +49,8 @@ export default function HomeScreen() {
               <ArrowUpRight size={18} color="#FF7A00" />
             </Pressable>
           </View>
-          <View className="mt-4 gap-3">
-            {topGoals.length > 0 ? (
-              topGoals.map((goal) => {
-                const safeTarget = goal.target_value > 0 ? goal.target_value : 1;
-                const rawPercent = (goal.current_value / safeTarget) * 100;
-                const progressPercent = Math.max(0, Math.min(100, rawPercent));
-                return (
-                  <View
-                    key={goal.id}
-                    className="rounded-2xl border border-white/10 bg-black/20 px-3 py-3"
-                  >
-                    <View className="flex-row items-center justify-between">
-                      <Text className="flex-1 text-sm font-semibold text-white">
-                        {goal.title}
-                      </Text>
-                      <Text className="text-xs font-medium text-white/70">
-                        {Math.round(progressPercent)}%
-                      </Text>
-                    </View>
-                    <Text className="mt-1 text-xs text-white/60">
-                      {goal.current_value} / {goal.target_value}
-                    </Text>
-                  </View>
-                );
-              })
-            ) : (
-              <Text className="text-sm text-white/70">
-                Add goals to define your focus for today.
-              </Text>
-            )}
+          <View className="mt-4">
+            <Text className="text-sm text-white/60">Goals feature is temporarily disabled during database migration.</Text>
           </View>
         </View>
 

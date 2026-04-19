@@ -3,56 +3,55 @@ import * as SQLite from "expo-sqlite";
 // Database instance
 let db: SQLite.SQLiteDatabase | null = null;
 let initPromise: Promise<SQLite.SQLiteDatabase> | null = null;
+const DB_SCHEMA_VERSION = 2;
 
-// TypeScript interfaces for type safety
+// TypeScript interfaces for new schema
 export interface User {
-  id: number;
+  id: string;
   onboarding_completed: number;
   groq_api_key: string | null;
-  preferences_json: string | null;
+  profile_json: string | null;
 }
 
-export interface Goal {
-  id: number;
-  user_id: number;
-  title: string;
-  type: string;
-  target_value: number;
-  current_value: number;
-  status: string;
-}
-
-export interface Workout {
-  id: number;
-  user_id: number;
-  workout_day_id: number | null;
+export interface WeightLog {
+  id: string;
   date: string;
-  plan_name: string;
-  duration: number;
+  weight: number;
+  notes: string | null;
 }
 
 export interface WorkoutDay {
-  id: number;
-  user_id: number;
-  date: string;
-  label: string;
+  id: string;
+  name: string;
+  last_played: string | null;
 }
 
 export interface Exercise {
-  id: number;
-  workout_id: number;
+  id: string;
+  day_id: string;
   name: string;
-  target_sets: number;
-  target_reps: number;
-  target_weight: number;
+  is_timed: number;
+  order_index: number;
+}
+
+export interface WorkoutSession {
+  id: string;
+  day_id: string;
+  date: string;
+  duration_seconds: number;
+  total_score: number;
 }
 
 export interface Set {
-  id: number;
-  exercise_id: number;
+  id: string;
+  session_id: string;
+  exercise_id: string;
   set_number: number;
-  weight: number;
-  reps: number;
+  weight: number | null;
+  reps: number | null;
+  score: number | null;
+  is_pr: number;
+  is_failure: number;
   completed: number;
 }
 
@@ -82,174 +81,105 @@ async function performInitialization(): Promise<SQLite.SQLiteDatabase> {
   try {
     db = await SQLite.openDatabaseAsync("lifetrack.db");
 
-    // Create users table
+    const versionRow = await db.getFirstAsync<{ user_version: number }>(
+      "PRAGMA user_version"
+    );
+    const currentVersion = versionRow?.user_version ?? 0;
+
+    if (currentVersion < DB_SCHEMA_VERSION) {
+      // One-time reset while migrating from legacy schema.
+      await db.execAsync(`
+        DROP TABLE IF EXISTS sets;
+        DROP TABLE IF EXISTS exercises;
+        DROP TABLE IF EXISTS workouts;
+        DROP TABLE IF EXISTS goals;
+        DROP TABLE IF EXISTS workout_days;
+        DROP TABLE IF EXISTS workout_sessions;
+        DROP TABLE IF EXISTS weight_logs;
+        DROP TABLE IF EXISTS users;
+      `);
+    }
+
+    // Create users table (app-wide settings, single-user)
     await db.execAsync(`
       CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id TEXT PRIMARY KEY,
         onboarding_completed INTEGER DEFAULT 0,
         groq_api_key TEXT,
-        preferences_json TEXT
+        profile_json TEXT
       );
     `);
-    await ensureUserSchema(db);
 
-    // Create goals table with user_id foreign key
+    // Create weight_logs table (daily morning weight tracking)
     await db.execAsync(`
-      CREATE TABLE IF NOT EXISTS goals (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        title TEXT NOT NULL,
-        type TEXT NOT NULL,
-        target_value REAL NOT NULL,
-        current_value REAL DEFAULT 0,
-        status TEXT DEFAULT 'active',
-        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+      CREATE TABLE IF NOT EXISTS weight_logs (
+        id TEXT PRIMARY KEY,
+        date TEXT NOT NULL UNIQUE,
+        weight REAL NOT NULL,
+        notes TEXT
       );
     `);
 
-    // Create workouts table with user_id foreign key
+    // Create workout_days table (recurring gym day templates)
     await db.execAsync(`
-      CREATE TABLE IF NOT EXISTS workouts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        workout_day_id INTEGER,
-        date TEXT NOT NULL,
-        plan_name TEXT NOT NULL,
-        duration INTEGER,
-        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY(workout_day_id) REFERENCES workout_days(id) ON DELETE SET NULL
+      CREATE TABLE IF NOT EXISTS workout_days (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        last_played TEXT
       );
     `);
-    await ensureWorkoutDaySchema(db);
-    await ensureWorkoutSchema(db);
 
-    // Create exercises table
+    // Create exercises table (exercises per day template)
     await db.execAsync(`
       CREATE TABLE IF NOT EXISTS exercises (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        workout_id INTEGER NOT NULL,
+        id TEXT PRIMARY KEY,
+        day_id TEXT NOT NULL,
         name TEXT NOT NULL,
-        target_sets INTEGER NOT NULL,
-        target_reps INTEGER NOT NULL,
-        target_weight REAL,
-        FOREIGN KEY(workout_id) REFERENCES workouts(id) ON DELETE CASCADE
+        is_timed INTEGER DEFAULT 0,
+        order_index INTEGER NOT NULL,
+        FOREIGN KEY(day_id) REFERENCES workout_days(id) ON DELETE CASCADE
       );
     `);
 
-    // Create sets table
+    // Create workout_sessions table (completed workout sessions)
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS workout_sessions (
+        id TEXT PRIMARY KEY,
+        day_id TEXT NOT NULL,
+        date TEXT NOT NULL,
+        duration_seconds INTEGER,
+        total_score REAL,
+        FOREIGN KEY(day_id) REFERENCES workout_days(id) ON DELETE CASCADE
+      );
+    `);
+
+    // Create sets table (individual set performance data)
     await db.execAsync(`
       CREATE TABLE IF NOT EXISTS sets (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        exercise_id INTEGER NOT NULL,
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        exercise_id TEXT NOT NULL,
         set_number INTEGER NOT NULL,
         weight REAL,
         reps INTEGER,
+        score REAL,
+        is_pr INTEGER DEFAULT 0,
+        is_failure INTEGER DEFAULT 0,
         completed INTEGER DEFAULT 0,
+        FOREIGN KEY(session_id) REFERENCES workout_sessions(id) ON DELETE CASCADE,
         FOREIGN KEY(exercise_id) REFERENCES exercises(id) ON DELETE CASCADE
       );
     `);
 
-    // Seed default user if none exists
-    await seedDefaultUser(db);
+    await db.execAsync(`PRAGMA user_version = ${DB_SCHEMA_VERSION};`);
 
-    console.log("✓ Database initialized successfully");
+    console.log("✓ Database initialized successfully with new schema");
     return db;
   } catch (error) {
     db = null;
     console.error("✗ Database initialization failed:", error);
     throw error;
   }
-}
-
-/**
- * Seed a default user record on first app launch.
- */
-async function seedDefaultUser(database: SQLite.SQLiteDatabase): Promise<void> {
-  try {
-    const result = await database.getFirstAsync<{ count: number }>(
-      "SELECT COUNT(*) as count FROM users"
-    );
-
-    if (!result || result.count === 0) {
-      await database.runAsync("INSERT INTO users (onboarding_completed) VALUES (0)");
-      console.log("✓ Default user created");
-    }
-  } catch (error) {
-    console.error("✗ Failed to seed default user:", error);
-    throw error;
-  }
-}
-
-async function ensureUserSchema(database: SQLite.SQLiteDatabase): Promise<void> {
-  const columns = await database.getAllAsync<{ name: string }>(
-    "PRAGMA table_info(users)"
-  );
-  const hasPreferencesJson = columns.some(
-    (column) => column.name === "preferences_json"
-  );
-
-  if (!hasPreferencesJson) {
-    await database.execAsync(
-      "ALTER TABLE users ADD COLUMN preferences_json TEXT;"
-    );
-  }
-}
-
-async function ensureWorkoutSchema(database: SQLite.SQLiteDatabase): Promise<void> {
-  const workoutColumns = await database.getAllAsync<{ name: string }>(
-    "PRAGMA table_info(workouts)"
-  );
-  const hasWorkoutDayId = workoutColumns.some(
-    (column) => column.name === "workout_day_id"
-  );
-
-  if (!hasWorkoutDayId) {
-    await database.execAsync(
-      "ALTER TABLE workouts ADD COLUMN workout_day_id INTEGER;"
-    );
-  }
-
-  // Keep only the latest active workout (duration IS NULL) per user before adding invariant index.
-  await database.execAsync(`
-    UPDATE workouts
-    SET duration = 0
-    WHERE id IN (
-      SELECT w.id
-      FROM workouts w
-      JOIN (
-        SELECT user_id, MAX(id) AS keep_id
-        FROM workouts
-        WHERE duration IS NULL
-        GROUP BY user_id
-      ) keep_workout ON keep_workout.user_id = w.user_id
-      WHERE w.duration IS NULL AND w.id != keep_workout.keep_id
-    );
-  `);
-
-  await database.execAsync(`
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_workouts_single_active_per_user
-    ON workouts(user_id)
-    WHERE duration IS NULL;
-  `);
-  await database.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_workouts_workout_day_id
-    ON workouts(workout_day_id);
-  `);
-}
-
-async function ensureWorkoutDaySchema(
-  database: SQLite.SQLiteDatabase
-): Promise<void> {
-  await database.execAsync(`
-    CREATE TABLE IF NOT EXISTS workout_days (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      date TEXT NOT NULL,
-      label TEXT NOT NULL,
-      UNIQUE(user_id, date),
-      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
-    );
-  `);
 }
 
 /**

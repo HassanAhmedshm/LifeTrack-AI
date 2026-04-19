@@ -16,7 +16,6 @@ import { ScreenHeader } from "../../src/components/ui/ScreenHeader";
 import { runAssistantPrompt } from "../../src/services/assistant";
 import { getDB } from "../../src/db/index";
 import { useUserStore } from "../../src/store/useUserStore";
-import { useWorkoutStore } from "../../src/store/useWorkoutStore";
 import { type FlowCategory, type FlowItem } from "../../src/components/flow/flowData";
 import { FlowCard } from "../../src/components/flow/FlowCard";
 import { FlowSlider } from "../../src/components/flow/FlowSlider";
@@ -37,7 +36,6 @@ export default function FlowScreen() {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
   const userId = useUserStore((state) => state.id);
-  const activeWorkout = useWorkoutStore((state) => state.activeWorkout);
   const [selectedCard, setSelectedCard] = useState<SelectedCard | null>(null);
   const [selectedOrigin, setSelectedOrigin] = useState<OverlayOrigin | null>(null);
   const [aiPrompt, setAiPrompt] = useState("");
@@ -62,48 +60,39 @@ export default function FlowScreen() {
     }
 
     const db = getDB();
-    await db.runAsync(
-      "DELETE FROM workout_days WHERE user_id = ? AND TRIM(COALESCE(label, '')) = ''",
-      [userId]
-    );
-    const days = await db.getAllAsync<{ id: number; date: string; label: string }>(
-      "SELECT id, date, label FROM workout_days WHERE user_id = ? AND TRIM(COALESCE(label, '')) != '' ORDER BY date ASC LIMIT 7",
-      [userId]
+    const days = await db.getAllAsync<{
+      id: string;
+      name: string;
+      last_played: string | null;
+    }>(
+      "SELECT id, name, last_played FROM workout_days WHERE TRIM(COALESCE(name, '')) != '' ORDER BY COALESCE(last_played, '') DESC, name ASC LIMIT 7"
     );
 
     const dynamicItems: FlowItem[] = [];
-    if (activeWorkout) {
-      dynamicItems.push({
-        id: `active-workout-${activeWorkout.id}`,
-        category: "gym",
-        timeRange: "Today",
-        title: activeWorkout.plan_name,
-        suggestion:
-          activeWorkout.exercises.length > 0
-            ? `You have ${activeWorkout.exercises.length} exercise${
-                activeWorkout.exercises.length > 1 ? "s" : ""
-              } in this workout.`
-            : "No exercises yet. Ask AI: add morning run.",
-        details:
-          activeWorkout.exercises.length > 0
-            ? activeWorkout.exercises.slice(0, 6).map((exercise) => exercise.name)
-            : ["AI command works globally from Flow, Chat, Workout, and Chef."],
-      });
-    }
+    // Workout feature is disabled during database migration
+    // if (activeWorkout) {
+    //   dynamicItems.push({
+    //     id: `active-workout-${activeWorkout.id}`,
+    //     category: "gym",
+    //     timeRange: "Today",
+    //     title: activeWorkout.plan_name,
+    //     ...
+    //   });
+    // }
 
     for (const day of days) {
       dynamicItems.push({
         id: `day-${day.id}`,
-        category: inferCategory(day.label),
-        timeRange: formatFlowDay(day.date),
-        title: day.label,
-        suggestion: `AI can add and modify workouts for ${day.label.toLowerCase()} directly.`,
+        category: inferCategory(day.name),
+        timeRange: formatFlowDay(day.last_played),
+        title: day.name,
+        suggestion: `AI can add and modify workouts for ${day.name.toLowerCase()} directly.`,
         details: ["Linked to your persistent workout-day schedule."],
       });
     }
 
     setFlowItems(dynamicItems);
-  }, [activeWorkout, userId]);
+  }, [userId]);
 
   useEffect(() => {
     void refreshFlowItems();
@@ -287,8 +276,11 @@ function inferCategory(label: string): FlowCategory {
   return "mind";
 }
 
-function formatFlowDay(isoDate: string): string {
-  const date = new Date(`${isoDate}T00:00:00`);
+function formatFlowDay(isoDate: string | null): string {
+  if (!isoDate) {
+    return "Planned";
+  }
+  const date = new Date(isoDate);
   if (Number.isNaN(date.getTime())) {
     return "Planned";
   }

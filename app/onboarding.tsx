@@ -18,10 +18,7 @@ export default function OnboardingScreen() {
   const [name, setName] = useState("");
   const [selectedGoal, setSelectedGoal] = useState<string>("");
   const [customGoal, setCustomGoal] = useState("");
-  const [age, setAge] = useState("");
   const [allergies, setAllergies] = useState("");
-  const [dietaryPreference, setDietaryPreference] = useState("");
-  const [activityLevel, setActivityLevel] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -34,14 +31,6 @@ export default function OnboardingScreen() {
       setErrorMessage("Please enter your name and primary goal.");
       return;
     }
-    const normalizedAge = age.trim() ? Number(age.trim()) : null;
-    if (
-      normalizedAge !== null &&
-      (!Number.isFinite(normalizedAge) || normalizedAge <= 0 || normalizedAge > 120)
-    ) {
-      setErrorMessage("Age must be between 1 and 120.");
-      return;
-    }
 
     setErrorMessage("");
     setIsSubmitting(true);
@@ -50,10 +39,7 @@ export default function OnboardingScreen() {
       await useUserStore.getState().completeOnboarding({
         name: normalizedName,
         primaryGoal: normalizedGoal,
-        age: normalizedAge,
         allergies,
-        dietaryPreference,
-        activityLevel,
       });
       router.replace("/(tabs)");
     } catch (error) {
@@ -127,45 +113,12 @@ export default function OnboardingScreen() {
             />
           </View>
 
-          <Text className="mt-4 text-xs text-white/60">Age</Text>
-          <View className="mt-2">
-            <Input
-              placeholder="e.g. 28"
-              value={age}
-              onChangeText={setAge}
-              keyboardType="number-pad"
-              returnKeyType="done"
-            />
-          </View>
-
           <Text className="mt-4 text-xs text-white/60">Allergies / restrictions</Text>
           <View className="mt-2">
             <Input
               placeholder="e.g. peanuts, lactose"
               value={allergies}
               onChangeText={setAllergies}
-              autoCapitalize="none"
-              returnKeyType="done"
-            />
-          </View>
-
-          <Text className="mt-4 text-xs text-white/60">Dietary preference</Text>
-          <View className="mt-2">
-            <Input
-              placeholder="e.g. high-protein, halal, vegetarian"
-              value={dietaryPreference}
-              onChangeText={setDietaryPreference}
-              autoCapitalize="sentences"
-              returnKeyType="done"
-            />
-          </View>
-
-          <Text className="mt-4 text-xs text-white/60">Activity level</Text>
-          <View className="mt-2">
-            <Input
-              placeholder="e.g. beginner, intermediate, advanced"
-              value={activityLevel}
-              onChangeText={setActivityLevel}
               autoCapitalize="none"
               returnKeyType="done"
             />

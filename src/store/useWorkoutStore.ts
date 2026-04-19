@@ -4,8 +4,8 @@ import { useUserStore } from "./useUserStore";
 import * as aiService from "../services/ai";
 
 type ActiveSet = {
-  id: number;
-  exercise_id: number;
+  id: string;
+  exercise_id: string;
   set_number: number;
   weight: number | null;
   reps: number | null;
@@ -13,22 +13,20 @@ type ActiveSet = {
 };
 
 type ActiveExercise = {
-  id: number;
-  workout_id: number;
+  id: string;
+  session_id: string;
   name: string;
-  target_sets: number;
-  target_reps: number;
-  target_weight: number | null;
+  is_timed: number;
+  order_index: number;
   sets: ActiveSet[];
 };
 
 type ActiveWorkout = {
-  id: number;
-  user_id: number;
-  workout_day_id: number | null;
+  id: string;
+  day_id: string;
   date: string;
-  plan_name: string;
-  duration: number | null;
+  duration_seconds: number | null;
+  total_score: number | null;
   exercises: ActiveExercise[];
 };
 
@@ -52,8 +50,8 @@ interface WorkoutStore {
   initializeSchedule: (options?: { force?: boolean }) => Promise<void>;
   addExercise: (exerciseData: AddExerciseData) => Promise<void>;
   updateSet: (
-    exerciseId: number,
-    setId: number,
+    exerciseId: string,
+    setId: string,
     data: UpdateSetData
   ) => Promise<void>;
   finishWorkout: () => Promise<void>;
@@ -65,367 +63,34 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
   isHydrated: false,
 
   startWorkout: async () => {
-    const db = getDB();
-    const userId = useUserStore.getState().id;
-    if (!userId) {
-      throw new Error("User not initialized. Cannot start workout.");
-    }
-
-    const existingWorkout = await db.getFirstAsync<{ id: number; date: string; plan_name: string; duration: number | null }>(
-      "SELECT id, workout_day_id, date, plan_name, duration FROM workouts WHERE user_id = ? AND duration IS NULL ORDER BY id DESC LIMIT 1",
-      [userId]
-    );
-
-    if (existingWorkout) {
-      await hydrateActiveWorkout(userId, set);
-      return;
-    }
-
-    const startedAt = new Date().toISOString();
-    let result: { lastInsertRowId: number };
-    try {
-      result = await db.runAsync(
-        "INSERT INTO workouts (user_id, workout_day_id, date, plan_name, duration) VALUES (?, NULL, ?, ?, NULL)",
-        [userId, startedAt, "Active Workout"]
-      );
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message.toLowerCase() : "";
-      const isActiveWorkoutUniquenessError =
-        (message.includes("unique constraint failed") &&
-          message.includes("workouts.user_id")) ||
-        message.includes("idx_workouts_single_active_per_user");
-      if (isActiveWorkoutUniquenessError) {
-        await hydrateActiveWorkout(userId, set);
-        return;
-      }
-      throw error;
-    }
-
-    set({
-      activeWorkout: {
-        id: result.lastInsertRowId,
-        user_id: userId,
-        workout_day_id: null,
-        date: startedAt,
-        plan_name: "Active Workout",
-        duration: null,
-        exercises: [],
-      },
-    });
+    // TODO: Workouts table schema has changed. Need to re-implement with workout_sessions.
+    // For now, throw error to prevent stale data access.
+    throw new Error("Workout feature is currently disabled during database migration.");
   },
 
   initializeSchedule: async (options) => {
-    const db = getDB();
-    const userId = useUserStore.getState().id;
-    if (!userId) {
-      throw new Error("User not initialized. Cannot initialize schedule.");
-    }
-    const shouldForceReset = Boolean(options?.force);
-    if (shouldForceReset) {
-      await db.runAsync("DELETE FROM workout_days WHERE user_id = ?", [userId]);
-    }
-
-    const labels = await getInitialScheduleLabels();
-
-    for (let i = 0; i < 7; i += 1) {
-      const date = new Date();
-      date.setHours(0, 0, 0, 0);
-      date.setDate(date.getDate() + i);
-      const isoDate = date.toISOString().slice(0, 10);
-      const label = labels[i % labels.length];
-
-      await db.runAsync(
-        "INSERT OR IGNORE INTO workout_days (user_id, date, label) VALUES (?, ?, ?)",
-        [userId, isoDate, label]
-      );
-    }
+    // TODO: Workout days schema has changed. Need to adapt to new structure.
+    throw new Error("Workout schedule initialization is disabled during migration.");
   },
 
   addExercise: async (exerciseData) => {
-    const db = getDB();
-    const { activeWorkout } = get();
-    if (!activeWorkout) {
-      throw new Error("No active workout. Start a workout first.");
-    }
-
-    const name = exerciseData.name.trim();
-    const targetSets = normalizePositiveInt(exerciseData.targetSets, 3, 12);
-    const targetReps = normalizePositiveInt(exerciseData.targetReps, 10, 100);
-    const targetWeight =
-      exerciseData.targetWeight !== undefined
-        ? normalizeOptionalNumber(exerciseData.targetWeight)
-        : null;
-
-    if (!name) {
-      throw new Error("Exercise name is required.");
-    }
-
-    let exerciseId = 0;
-    const defaultSets: ActiveSet[] = [];
-    await db.withExclusiveTransactionAsync(async (txn) => {
-      const exerciseInsert = await txn.runAsync(
-        "INSERT INTO exercises (workout_id, name, target_sets, target_reps, target_weight) VALUES (?, ?, ?, ?, ?)",
-        [activeWorkout.id, name, targetSets, targetReps, targetWeight]
-      );
-      exerciseId = exerciseInsert.lastInsertRowId;
-
-      for (let setNumber = 1; setNumber <= targetSets; setNumber += 1) {
-        const setInsert = await txn.runAsync(
-          "INSERT INTO sets (exercise_id, set_number, weight, reps, completed) VALUES (?, ?, NULL, NULL, 0)",
-          [exerciseId, setNumber]
-        );
-        defaultSets.push({
-          id: setInsert.lastInsertRowId,
-          exercise_id: exerciseId,
-          set_number: setNumber,
-          weight: null,
-          reps: null,
-          completed: 0,
-        });
-      }
-    });
-
-    const insertedExercise: ActiveExercise = {
-      id: exerciseId,
-      workout_id: activeWorkout.id,
-      name,
-      target_sets: targetSets,
-      target_reps: targetReps,
-      target_weight: targetWeight,
-      sets: defaultSets,
-    };
-
-    set((state) => ({
-      activeWorkout: state.activeWorkout
-        ? {
-            ...state.activeWorkout,
-            exercises: [...state.activeWorkout.exercises, insertedExercise],
-          }
-        : state.activeWorkout,
-    }));
+    // TODO: Exercises table schema has changed.
+    throw new Error("Add exercise feature is disabled during migration.");
   },
 
   updateSet: async (exerciseId, setId, data) => {
-    const db = getDB();
-    const { activeWorkout } = get();
-    if (!activeWorkout) {
-      throw new Error("No active workout to update.");
-    }
-
-    const currentExercise = activeWorkout.exercises.find(
-      (exercise) => exercise.id === exerciseId
-    );
-    if (!currentExercise) {
-      throw new Error("Exercise not found in active workout.");
-    }
-
-    const currentSet = currentExercise.sets.find((setItem) => setItem.id === setId);
-    if (!currentSet) {
-      throw new Error("Set not found in active workout.");
-    }
-
-    const setClauses: string[] = [];
-    const params: Array<number | null> = [];
-    const nextValues: Partial<ActiveSet> = {};
-
-    if (data.weight !== undefined) {
-      const nextWeight = normalizeOptionalNumber(data.weight);
-      setClauses.push("weight = ?");
-      params.push(nextWeight);
-      nextValues.weight = nextWeight;
-    }
-    if (data.reps !== undefined) {
-      const nextReps = normalizeOptionalNumber(data.reps);
-      setClauses.push("reps = ?");
-      params.push(nextReps);
-      nextValues.reps = nextReps;
-    }
-    if (data.completed !== undefined) {
-      const nextCompleted = normalizeCompletedValue(data.completed);
-      setClauses.push("completed = ?");
-      params.push(nextCompleted);
-      nextValues.completed = nextCompleted;
-    }
-
-    if (setClauses.length === 0) {
-      return;
-    }
-
-    await db.runAsync(
-      `UPDATE sets SET ${setClauses.join(", ")} WHERE id = ? AND exercise_id = ?`,
-      [...params, setId, exerciseId]
-    );
-
-    set((state) => ({
-      activeWorkout: state.activeWorkout
-        ? {
-            ...state.activeWorkout,
-            exercises: state.activeWorkout.exercises.map((exercise) =>
-              exercise.id === exerciseId
-                ? {
-                    ...exercise,
-                    sets: exercise.sets.map((setItem) =>
-                      setItem.id === setId
-                        ? { ...setItem, ...nextValues }
-                        : setItem
-                    ),
-                  }
-                : exercise
-            ),
-          }
-        : state.activeWorkout,
-    }));
+    // TODO: Sets table schema has changed.
+    throw new Error("Update set feature is disabled during migration.");
   },
 
   finishWorkout: async () => {
-    const db = getDB();
-    const { activeWorkout } = get();
-    if (!activeWorkout) {
-      throw new Error("No active workout to finish.");
-    }
-
-    const startedAt = new Date(activeWorkout.date).getTime();
-    const elapsedMs = Date.now() - startedAt;
-    const computedDurationMinutes = Math.max(1, Math.round(elapsedMs / 60000));
-
-    await db.runAsync("UPDATE workouts SET duration = ? WHERE id = ?", [
-      computedDurationMinutes,
-      activeWorkout.id,
-    ]);
-
-    set({ activeWorkout: null });
+    // TODO: Workout sessions table schema has changed.
+    throw new Error("Finish workout feature is disabled during migration.");
   },
 
   hydrate: async () => {
-    const userId = useUserStore.getState().id;
-    if (!userId) {
-      throw new Error("User not initialized. Cannot hydrate workouts.");
-    }
-
-    await hydrateActiveWorkout(userId, set);
-    set({ isHydrated: true });
+    // Mark hydration complete but activeWorkout is null
+    set({ activeWorkout: null, isHydrated: true });
+    console.log("✓ Workout store hydrated (workouts disabled during migration)");
   },
 }));
-
-async function hydrateActiveWorkout(
-  userId: number,
-  set: (state: Partial<WorkoutStore> | ((state: WorkoutStore) => Partial<WorkoutStore>)) => void
-): Promise<void> {
-  const db = getDB();
-  const workout = await db.getFirstAsync<{
-    id: number;
-    user_id: number;
-    workout_day_id: number | null;
-    date: string;
-    plan_name: string;
-    duration: number | null;
-  }>(
-    "SELECT id, user_id, workout_day_id, date, plan_name, duration FROM workouts WHERE user_id = ? AND duration IS NULL ORDER BY id DESC LIMIT 1",
-    [userId]
-  );
-
-  if (!workout) {
-    set({ activeWorkout: null });
-    return;
-  }
-
-  const exercises = await db.getAllAsync<{
-    id: number;
-    workout_id: number;
-    name: string;
-    target_sets: number;
-    target_reps: number;
-    target_weight: number | null;
-  }>("SELECT * FROM exercises WHERE workout_id = ? ORDER BY id ASC", [workout.id]);
-
-  const hydratedExercises: ActiveExercise[] = [];
-  for (const exercise of exercises) {
-    const sets = await db.getAllAsync<ActiveSet>(
-      "SELECT id, exercise_id, set_number, weight, reps, completed FROM sets WHERE exercise_id = ? ORDER BY set_number ASC",
-      [exercise.id]
-    );
-
-    hydratedExercises.push({
-      ...exercise,
-      sets,
-    });
-  }
-
-  set({
-    activeWorkout: {
-      ...workout,
-      exercises: hydratedExercises,
-    },
-  });
-}
-
-async function getInitialScheduleLabels(): Promise<string[]> {
-  const hasApiKey = Boolean(useUserStore.getState().groqApiKey?.trim());
-  if (!hasApiKey) {
-    throw new Error("API key is required to initialize AI schedule.");
-  }
-
-  try {
-    const response = await aiService.sendPrompt(
-      "Create a balanced 7-day workout schedule with short day labels.",
-      `Return strictly:
-      {
-        "labels": ["label1","label2","label3","label4","label5","label6","label7"]
-      }`
-    );
-    if (!response || typeof response !== "object") {
-      throw new Error("AI schedule response is invalid.");
-    }
-    const labelsRaw = (response as Record<string, unknown>).labels;
-    if (!Array.isArray(labelsRaw) || labelsRaw.length < 7) {
-      throw new Error("AI schedule requires 7 labels.");
-    }
-
-    const normalized = labelsRaw
-      .map((value) => (typeof value === "string" ? value.trim() : ""))
-      .filter(Boolean)
-      .slice(0, 7);
-    if (normalized.length !== 7) {
-      throw new Error("AI schedule labels were incomplete.");
-    }
-    return normalized;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error("Could not initialize AI schedule.");
-  }
-}
-
-function normalizePositiveInt(
-  value: number | undefined,
-  fallback: number,
-  max: number
-): number {
-  if (value === undefined) {
-    return fallback;
-  }
-
-  const normalized = Math.round(Number(value));
-  if (!Number.isFinite(normalized) || normalized <= 0 || normalized > max) {
-    throw new Error(`Numeric value must be between 1 and ${max}.`);
-  }
-  return normalized;
-}
-
-function normalizeOptionalNumber(value: number | null): number | null {
-  if (value === null) {
-    return null;
-  }
-
-  const normalized = Number(value);
-  if (!Number.isFinite(normalized) || normalized < 0) {
-    throw new Error("Numeric value must be zero or greater.");
-  }
-  return normalized;
-}
-
-function normalizeCompletedValue(value: number): number {
-  return value ? 1 : 0;
-}
